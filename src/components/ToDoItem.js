@@ -222,7 +222,7 @@ const ToDoItem = ({
   type="text"
   value={task}
   onChange={(e) => {
-    const newTask = { ...{id, index, moveItem, task, complete, primaryDuration: initialPrimaryDuration, secondaryDuration: initialSecondaryDuration, onToggle, onDelete, handleUpdate}, task: e.target.value };
+    const newTask = { ...{id, index, moveItem, task, complete, primaryDuration: primaryDuration, secondaryDuration: secondaryDuration, onToggle, onDelete, handleUpdate}, task: e.target.value };
     handleUpdate(newTask);
   }}
   style={{ marginLeft: '1rem', marginRight: '1rem' }}

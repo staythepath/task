@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 
 const NewTaskForm = ({ onSubmit }) => {
   const [task, setTask] = useState('');
-  const [primaryDuration, setPrimaryDuration] = useState(25);
-  const [secondaryDuration, setSecondaryDuration] = useState(5);
+  const [primaryDuration, setPrimaryDuration] = useState(25 * 60);
+  const [secondaryDuration, setSecondaryDuration] = useState(5 * 60);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (task.trim()) {
       console.log('New task:', task.trim(), primaryDuration * 60, secondaryDuration * 60);
-      onSubmit(task.trim(), primaryDuration * 60, secondaryDuration * 60);
+      onSubmit(task.trim(), primaryDuration, secondaryDuration);
       setTask('');
-      setPrimaryDuration(25);
-      setSecondaryDuration(5);
+      setPrimaryDuration(25 * 60);
+      setSecondaryDuration(5 * 60);
     }
     
   };
@@ -61,7 +61,7 @@ const NewTaskForm = ({ onSubmit }) => {
         onChange={(e) => setTask(e.target.value)}
         placeholder="Add new task"
       />
-      <button onClick={(e) => { e.preventDefault(); setPrimaryDuration(primaryDuration - 1)}}>-</button>
+      <button onClick={(e) => { e.preventDefault(); setPrimaryDuration(primaryDuration - 60)}}>-</button>
       <div
         style={timerDisplayStyle}
         onClick={() => focusHiddenInput("primary")}
@@ -75,8 +75,8 @@ const NewTaskForm = ({ onSubmit }) => {
           : String(primaryDuration % 60).padStart(2, "0")}
       </div>
 
-      <button onClick={(e) => { e.preventDefault(); setPrimaryDuration(primaryDuration + 1)}}>+</button>
-      <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(secondaryDuration - 1)}}>-</button>
+      <button onClick={(e) => { e.preventDefault(); setPrimaryDuration(primaryDuration + 60)}}>+</button>
+      <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(secondaryDuration - 60)}}>-</button>
       <div
         style={timerDisplayStyle}
         onClick={() => focusHiddenInput("secondary")}
@@ -91,7 +91,7 @@ const NewTaskForm = ({ onSubmit }) => {
       </div>
 
 
-      <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(secondaryDuration + 1)}}>+</button>
+      <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(secondaryDuration + 60)}}>+</button>
       <button type="submit" style={{ marginLeft: '1rem' }}>
         Add
       </button>
