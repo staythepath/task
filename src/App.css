@@ -37,6 +37,23 @@
   }
 }
 
+[contentEditable] {
+  cursor: text;
+  min-height: 1.2em;
+  padding: 3px;
+}
+
+[contentEditable]::selection {
+  background-color: rgba(255, 255, 255, 0.99);
+  color: #333;
+}
+
+[contentEditable]::-moz-selection {
+  background-color: rgba(255, 255, 255, 0.99);
+  color: #333;
+}
+
+
 body {
   background-color: #333;
   color: #ccc;
@@ -97,8 +114,53 @@ span {
   flex-grow: 1;
 }
 
+.hidden-timer-input:-moz-focusring {
+  outline: none;
+}
+
+.hidden-timer-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #000000; /* Change the color here */
+}
+
 .hidden-timer-input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
+  outline: none;
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.timer-input {
+  width: 1.2rem;
+  max-width: 1.2rem;
+  margin: 0 0.1rem;
+  background-color: transparent;
+  border: none; /* Remove border */
+  color: transparent;
+  font-size: 1rem;
+  text-align: center;
+  outline: none; /* Remove outline */
+  moz-appearance: textfield;
+}
+
+/*const timerDisplayStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '1.2rem',
+  margin: '0 0.5rem',
+  marginRight: '0.03rem',
+  marginLeft: '.4rem',
+};
+*/
+.timer-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+
+.timer-input:focus {
+  border-color: #666; /* Add this line */
 }

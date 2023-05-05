@@ -20,6 +20,8 @@ const ToDoItem = ({
   const [isRunning, setIsRunning] = useState(false);
   const [isPrimary, setIsPrimary] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
+  const [secondaryDurationFocused, setSecondaryDurationFocused] = useState(false);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -67,6 +69,17 @@ const ToDoItem = ({
   const toggleEdit = () => {
     setIsEditing(!isEditing);
   };
+
+  const colonDisplayStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '.01rem',
+    margin: '0 0rem',
+    lineHeight: '1',
+    verticalAlign: 'middle',
+    cursor: 'text',
+  };
   
 
   const adjustTime = (type, delta) => {
@@ -87,19 +100,16 @@ const ToDoItem = ({
     setIsPrimary(true);
   };
 
-  const focusHiddenInput = (type) => {
-    if (isEditing && (type === "primary" || type === "secondary")) {
-      document.querySelector(`#todo-${id}-hidden-input-${type}`).focus();
-    }
-  };
   
 
   const timerDisplayStyle = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '2rem',
+    width: '1.2rem',
     margin: '0 0.5rem',
+    marginRight: '0.03rem',
+    marginLeft: '.4rem',
   };
 
   const countdownDisplayStyle = {
@@ -259,38 +269,60 @@ const ToDoItem = ({
           min="0"
         />
           <button onClick={() => adjustTime('primary', -1)}>-</button>
-          <div
-            style={timerDisplayStyle}
-            onClick={() => focusHiddenInput("primary")}
-          >
-            {isNaN(primaryDuration / 60) || primaryDuration === null
+          <input
+            type="text"
+            pattern="\d*"
+            value={isNaN(primaryDuration / 60) || primaryDuration === null
               ? "00"
               : Math.floor(primaryDuration / 60)}
-            :
-            {isNaN(primaryDuration % 60) || primaryDuration === null
-              ? "00"
-              : String(primaryDuration % 60).padStart(2, "0")}
-          </div>
-
-
-          <button onClick={() => adjustTime('primary', 1)}>+</button>
-          <button onClick={() => adjustTime('secondary', -1)}>-</button>
-          <div
-            style={timerDisplayStyle}
-            onClick={() => focusHiddenInput("secondary")}
-          >
-            {isNaN(secondaryDuration / 60) || secondaryDuration === null
-              ? "00"
-              : Math.floor(secondaryDuration / 60)}
-            :
-            {isNaN(secondaryDuration % 60) || secondaryDuration === null
-              ? "00"
-              : String(secondaryDuration % 60).padStart(2, "0")}
-          </div>
-
-
-          <button onClick={() => adjustTime('secondary', 1)}>+</button>
-        </>
+            onChange={(e) => {
+              const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+              if (!isNaN(value)) {
+                setPrimaryDuration(value * 60);
+              }
+            }}
+            className="timer-input"
+            style={{ borderColor: primaryDurationFocused ? '#666' : 'transparent', backgroundColor: primaryDurationFocused ? '#444' : 'transparent' }}
+            onFocus={() => setPrimaryDurationFocused(true)}
+            onBlur={() => setPrimaryDurationFocused(false)}
+          />
+            <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
+            <div
+              style={timerDisplayStyle}
+            >
+              {isNaN(primaryDuration % 60) || primaryDuration === null
+                ? "00"
+                : String(primaryDuration % 60).padStart(2, "0")}
+            </div>
+            <button onClick={() => adjustTime('primary', 1)}>+</button>
+            <button onClick={() => adjustTime('secondary', -1)}>-</button>
+            <input
+              type="text"
+              pattern="\d*"
+              value={isNaN(secondaryDuration / 60) || secondaryDuration === null
+                ? "00"
+                : Math.floor(secondaryDuration / 60)}
+              onChange={(e) => {
+                const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                if (!isNaN(value)) {
+                  setSecondaryDuration(value * 60);
+                }
+              }}
+              className="timer-input"
+              style={{ borderColor: secondaryDurationFocused ? '#666' : 'transparent', backgroundColor: secondaryDurationFocused ? '#444' : 'transparent' }}
+              onFocus={() => setSecondaryDurationFocused(true)}
+              onBlur={() => setSecondaryDurationFocused(false)}
+            />
+            <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
+            <div
+              style={timerDisplayStyle}
+            >
+              {isNaN(secondaryDuration % 60) || secondaryDuration === null
+                ? "00"
+                : String(secondaryDuration % 60).padStart(2, "0")}
+            </div>
+            <button onClick={() => adjustTime('secondary', 1)}>+</button>
+          </>
       }
       
       <div style={countdownDisplayStyle}>
