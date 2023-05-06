@@ -223,27 +223,19 @@ const ToDoItem = ({
       </div>
       <input type="checkbox" checked={complete} onChange={onToggle} />
       {
-      isEditing ? (
-        <input
-  type="text"
-  value={task}
-  onChange={(e) => {
+  isEditing ? (
     <input
-  type="text"
-  value={task}
-  onChange={(e) => {
-    const newTask = { ...{id, index, moveItem, task, complete, primaryDuration: primaryDuration, secondaryDuration: secondaryDuration, onToggle, onDelete, handleUpdate}, task: e.target.value };
-    handleUpdate(newTask);
-  }}
-  style={{ marginLeft: '1rem', marginRight: '1rem' }}
-/>
-  }}
-  style={{ marginLeft: '1rem', marginRight: '1rem' }}
-/>
-      ) : (
-        <span>{task}</span>
-      )
-    }
+      type="text"
+      value={task}
+      onChange={(e) => {
+        handleUpdate({ ...{id, index, moveItem, task, complete, primaryDuration, secondaryDuration, onToggle, onDelete, handleUpdate}, task: e.target.value });
+      }}
+      style={{ marginLeft: '1rem', marginRight: '1rem' }}
+    />
+  ) : (
+    <span>{task}</span>
+  )
+}
     
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
       {isEditing &&
@@ -284,7 +276,10 @@ const ToDoItem = ({
             className="timer-input"
             style={{ borderColor: primaryDurationFocused ? '#666' : 'transparent', backgroundColor: primaryDurationFocused ? '#444' : 'transparent' }}
             onFocus={() => setPrimaryDurationFocused(true)}
-            onBlur={() => setPrimaryDurationFocused(false)}
+            onBlur={() => {
+              setPrimaryDurationFocused(false);
+              setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
+            }}
           />
             <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
             <div
@@ -294,7 +289,7 @@ const ToDoItem = ({
                 ? "00"
                 : String(primaryDuration % 60).padStart(2, "0")}
             </div>
-            <button onClick={() => adjustTime('primary', 1)}>+</button>
+            <button onClick={() => adjustTime('primary', primaryDuration < 90 * 60 ? 1 : 0)}>+</button>
             <button onClick={() => adjustTime('secondary', -1)}>-</button>
             <input
               type="text"
@@ -311,7 +306,10 @@ const ToDoItem = ({
               className="timer-input"
               style={{ borderColor: secondaryDurationFocused ? '#666' : 'transparent', backgroundColor: secondaryDurationFocused ? '#444' : 'transparent' }}
               onFocus={() => setSecondaryDurationFocused(true)}
-              onBlur={() => setSecondaryDurationFocused(false)}
+              onBlur={() => {
+                setSecondaryDurationFocused(false);
+                setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
+              }}
             />
             <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
             <div
@@ -321,7 +319,7 @@ const ToDoItem = ({
                 ? "00"
                 : String(secondaryDuration % 60).padStart(2, "0")}
             </div>
-            <button onClick={() => adjustTime('secondary', 1)}>+</button>
+            <button onClick={() => adjustTime('secondary', secondaryDuration < 90 * 60 ? 1 : 0)}>+</button>
           </>
       }
       
@@ -333,16 +331,20 @@ const ToDoItem = ({
           style={{ width: '100%', textAlign: 'center', marginLeft: '.5rem' }}
         />
       </div>
-      <button onClick={toggleTimer} style={{ marginLeft: '1rem', minWidth: '72px', maxWidth: '72px' }}>
-        {isRunning ? 'Pause' : 'Start'}
-      </button>
-      <button onClick={resetTimer} style={{ marginLeft: '1rem' }}>
-        Reset
-      </button>
-      <button onClick={onDelete} style={{ marginLeft: '1rem' }}>
-        Delete
-      </button>
-      <button onClick={toggleEdit} style={{ marginLeft: '1rem' }}>
+      {!isEditing && (
+  <>
+    <button onClick={toggleTimer} style={{ marginLeft: '1rem', minWidth: '72px', maxWidth: '72px' }}>
+      {isRunning ? 'Pause' : 'Start'}
+    </button>
+    <button onClick={resetTimer} style={{ marginLeft: '1rem' }}>
+      Reset
+    </button>
+    <button onClick={onDelete} style={{ marginLeft: '1rem' }}>
+      Delete
+    </button>
+  </>
+)}
+      <button onClick={toggleEdit} style={{ marginLeft: '1rem', minWidth: '70px', maxWidth: '70px', textAlign: 'center' }}>
         {isEditing ? 'Done' : 'Edit'}
       </button>
     </div>

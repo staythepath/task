@@ -54,6 +54,7 @@ const NewTaskForm = ({ onSubmit }) => {
         }
         className="hidden-timer-input"
         min="0"
+        max="90"
       />
       <input
         id="new-task-form-hidden-input-secondary"
@@ -65,6 +66,7 @@ const NewTaskForm = ({ onSubmit }) => {
         }
         className="hidden-timer-input"
         min="0"
+        max="90"
         
       />
 
@@ -90,7 +92,10 @@ const NewTaskForm = ({ onSubmit }) => {
         className="timer-input"
         style={{ borderColor: primaryDurationFocused ? '#666' : 'transparent', backgroundColor: primaryDurationFocused ? '#444' : 'transparent' }}
         onFocus={() => setPrimaryDurationFocused(true)}
-        onBlur={() => setPrimaryDurationFocused(false)}
+        onBlur={() => {
+          setPrimaryDurationFocused(false);
+          setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
+        }}
       />
 <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
 <div
@@ -102,7 +107,7 @@ const NewTaskForm = ({ onSubmit }) => {
 </div>
 
 
-      <button onClick={(e) => { e.preventDefault(); setPrimaryDuration(primaryDuration + 60)}}>+</button>
+      <button onClick={(e) => { e.preventDefault(); if (primaryDuration < 90 * 60) setPrimaryDuration(primaryDuration + 60)}}>+</button>
       <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(Math.max(0, secondaryDuration - 60)) }}>-</button>
       <input
         type="text"
@@ -119,7 +124,10 @@ const NewTaskForm = ({ onSubmit }) => {
         className="timer-input"
         style={{ borderColor: secondaryDurationFocused ? '#666' : 'transparent', backgroundColor: secondaryDurationFocused ? '#444' : 'transparent' }} // Updated here
         onFocus={() => setSecondaryDurationFocused(true)}
-        onBlur={() => setSecondaryDurationFocused(false)}
+        onBlur={() => {
+          setSecondaryDurationFocused(false);
+          setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
+        }}
       />
       <div style={{ ...colonDisplayStyle, cursor: 'default' }}>:</div>
       <div
@@ -129,7 +137,7 @@ const NewTaskForm = ({ onSubmit }) => {
           ? "00"
           : String(secondaryDuration % 60).padStart(2, "0")}
       </div>
-      <button onClick={(e) => { e.preventDefault(); setSecondaryDuration(secondaryDuration + 60)}}>+</button>
+      <button onClick={(e) => { e.preventDefault(); if (secondaryDuration < 90 * 60) setSecondaryDuration(secondaryDuration + 60)}}>+</button>
       <button type="submit" style={{ marginLeft: '1rem' }}>
         Add
       </button>
