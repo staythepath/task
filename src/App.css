@@ -53,7 +53,6 @@
   color: #333;
 }
 
-
 body {
   background-color: #333;
   color: #ccc;
@@ -73,7 +72,7 @@ form {
   margin-bottom: 1.5rem;
 }
 
-input[type='text'] {
+input[type="text"] {
   padding: 0.5rem;
   font-size: 1rem;
   flex-grow: 1;
@@ -106,7 +105,7 @@ li {
   margin-bottom: 0.5rem;
 }
 
-input[type='checkbox'] {
+input[type="checkbox"] {
   margin-right: 1rem;
 }
 
@@ -158,8 +157,6 @@ span {
   -webkit-appearance: none;
   margin: 0;
 }
-
-
 
 .timer-input:focus {
   border-color: #666; /* Add this line */
