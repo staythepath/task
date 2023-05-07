@@ -4,6 +4,7 @@ const NewTaskForm = ({ onSubmit }) => {
   const [task, setTask] = useState("");
   const [primaryDuration, setPrimaryDuration] = useState(25 * 60);
   const [secondaryDuration, setSecondaryDuration] = useState(5 * 60);
+  const [numCycles, setNumCycles] = useState(1);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,12 +13,14 @@ const NewTaskForm = ({ onSubmit }) => {
         "New task:",
         task.trim(),
         primaryDuration * 60,
-        secondaryDuration * 60
+        secondaryDuration * 60,
+        numCycles
       );
-      onSubmit(task.trim(), primaryDuration, secondaryDuration);
+      onSubmit(task.trim(), primaryDuration, secondaryDuration, numCycles);
       setTask("");
       setPrimaryDuration(25 * 60);
       setSecondaryDuration(5 * 60);
+      setNumCycles(1);
     }
   };
 
@@ -79,14 +82,31 @@ const NewTaskForm = ({ onSubmit }) => {
         onChange={(e) => setTask(e.target.value)}
         placeholder="Add new task"
       />
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          setPrimaryDuration(Math.max(0, primaryDuration - 60));
-        }}
-      >
-        -
-      </button>
+
+      <div className="cycle-input">
+        <input
+          type="number"
+          min="1"
+          className="cycle-input-field"
+          value={numCycles}
+          onChange={(e) => setNumCycles(parseInt(e.target.value))}
+        />
+        <div className="cycle-btn-container">
+          <button
+            className="cycle-change-btn cycle-change-btn-plus"
+            onClick={() => setNumCycles(numCycles + 1)}
+          >
+            +
+          </button>
+          <button
+            className="cycle-change-btn cycle-change-btn-minus"
+            onClick={() => setNumCycles(Math.max(1, numCycles - 1))}
+          >
+            -
+          </button>
+        </div>
+      </div>
+
       <input
         type="text"
         pattern="\d*"
@@ -120,23 +140,27 @@ const NewTaskForm = ({ onSubmit }) => {
           : String(primaryDuration % 60).padStart(2, "0")}
       </div>
 
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          if (primaryDuration < 90 * 60)
-            setPrimaryDuration(primaryDuration + 60);
-        }}
-      >
-        +
-      </button>
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          setSecondaryDuration(Math.max(0, secondaryDuration - 60));
-        }}
-      >
-        -
-      </button>
+      <div className="timer-btn-container">
+        <button
+          className="timer-change-btn timer-change-btn-plus"
+          onClick={(e) => {
+            e.preventDefault();
+            if (primaryDuration < 90 * 60)
+              setPrimaryDuration(primaryDuration + 60);
+          }}
+        >
+          +
+        </button>
+        <button
+          className="timer-change-btn timer-change-btn-minus"
+          onClick={(e) => {
+            e.preventDefault();
+            setPrimaryDuration(Math.max(0, primaryDuration - 60));
+          }}
+        >
+          -
+        </button>
+      </div>
       <input
         type="text"
         pattern="\d*"
@@ -169,15 +193,28 @@ const NewTaskForm = ({ onSubmit }) => {
           ? "00"
           : String(secondaryDuration % 60).padStart(2, "0")}
       </div>
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          if (secondaryDuration < 90 * 60)
-            setSecondaryDuration(secondaryDuration + 60);
-        }}
-      >
-        +
-      </button>
+      <div className="timer-btn-container">
+        <button
+          className="timer-change-btn timer-change-btn-plus"
+          onClick={(e) => {
+            e.preventDefault();
+            if (secondaryDuration < 90 * 60)
+              setSecondaryDuration(secondaryDuration + 60);
+          }}
+        >
+          +
+        </button>
+        <button
+          className="timer-change-btn timer-change-btn-minus"
+          onClick={(e) => {
+            e.preventDefault();
+            setSecondaryDuration(Math.max(0, secondaryDuration - 60));
+          }}
+        >
+          -
+        </button>
+      </div>
+
       <button type="submit" style={{ marginLeft: "1rem" }}>
         Add
       </button>

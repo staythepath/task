@@ -6,6 +6,7 @@ import NewTaskForm from "./NewTaskForm";
 
 const ToDoList = () => {
   const [todos, setTodos] = useState([]);
+  const [nextTaskId, setNextTaskId] = useState(null);
 
   const handleToggle = (id) => {
     const newTodos = todos.map((todo) =>
@@ -26,14 +27,29 @@ const ToDoList = () => {
     setTodos(newTodos);
   };
 
-  const handleNewTask = (task, primaryDuration, secondaryDuration) => {
-    console.log("Task:", task, primaryDuration, secondaryDuration);
+  const handleCyclesCompleted = (completedTaskId) => {
+    const taskIndex = todos.findIndex((task) => task.id === completedTaskId);
+    if (taskIndex < todos.length - 1) {
+      setNextTaskId(todos[taskIndex + 1].id);
+    } else {
+      setNextTaskId(null);
+    }
+  };
+
+  const handleNewTask = (
+    task,
+    primaryDuration,
+    secondaryDuration,
+    numCycles
+  ) => {
+    console.log("Task:", task, primaryDuration, secondaryDuration, numCycles);
     const newTodo = {
       id: Date.now(),
       task: task,
       complete: false,
       primaryDuration: primaryDuration,
       secondaryDuration: secondaryDuration,
+      numCycles: numCycles,
     };
     setTodos([...todos, newTodo]);
   };
@@ -62,9 +78,12 @@ const ToDoList = () => {
           complete={todo.complete}
           primaryDuration={todo.primaryDuration}
           secondaryDuration={todo.secondaryDuration}
+          numCycles={todo.numCycles}
           moveItem={moveItem}
           onToggle={() => handleToggle(todo.id)}
           onDelete={() => handleDelete(todo.id)}
+          nextTaskId={nextTaskId}
+          onCyclesCompleted={() => handleCyclesCompleted(todo.id)}
         />
       ))}
     </DndProvider>

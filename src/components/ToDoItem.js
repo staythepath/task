@@ -10,9 +10,12 @@ const ToDoItem = ({
   complete,
   primaryDuration: initialPrimaryDuration,
   secondaryDuration: initialSecondaryDuration,
+  numCycles: initialNumCycles,
   onToggle,
   onDelete,
   handleUpdate,
+  onCyclesCompleted,
+  nextTaskId,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -27,6 +30,8 @@ const ToDoItem = ({
   const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
   const [secondaryDurationFocused, setSecondaryDurationFocused] =
     useState(false);
+  const [currentCycle, setCurrentCycle] = useState(0);
+  const [numCycles, setNumCycles] = useState(initialNumCycles);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -36,6 +41,12 @@ const ToDoItem = ({
   useEffect(() => {
     setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
   }, [primaryDuration, secondaryDuration, isPrimary]);
+
+  useEffect(() => {
+    if (nextTaskId === id) {
+      setIsRunning(true);
+    }
+  }, [nextTaskId, id]);
 
   useEffect(() => {
     let timer;
@@ -63,13 +74,29 @@ const ToDoItem = ({
 
       playSound(8);
 
+      if (!isPrimary) {
+        if (currentCycle < numCycles - 1) {
+          setCurrentCycle(currentCycle + 1);
+        } else {
+          setIsRunning(false);
+          onCyclesCompleted();
+        }
+      }
       setIsPrimary(!isPrimary);
       setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-      setIsRunning(true);
     }
 
     return () => clearInterval(timer);
-  }, [isRunning, timeLeft, primaryDuration, secondaryDuration, isPrimary]);
+  }, [
+    isRunning,
+    timeLeft,
+    primaryDuration,
+    secondaryDuration,
+    isPrimary,
+    currentCycle,
+    numCycles,
+    onCyclesCompleted,
+  ]);
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
@@ -264,6 +291,29 @@ const ToDoItem = ({
       >
         {isEditing && (
           <>
+            <div className="cycle-input">
+              <input
+                type="number"
+                min="1"
+                className="cycle-input-field"
+                value={numCycles}
+                onChange={(e) => setNumCycles(parseInt(e.target.value))}
+              />
+              <div className="cycle-btn-container">
+                <button
+                  className="cycle-change-btn cycle-change-btn-plus"
+                  onClick={() => setNumCycles(numCycles + 1)}
+                >
+                  +
+                </button>
+                <button
+                  className="cycle-change-btn cycle-change-btn-minus"
+                  onClick={() => setNumCycles(Math.max(1, numCycles - 1))}
+                >
+                  -
+                </button>
+              </div>
+            </div>
             <input
               id={`todo-${id}-hidden-input-primary`}
               type="number"
@@ -288,7 +338,7 @@ const ToDoItem = ({
               className="hidden-timer-input"
               min="0"
             />
-            <button onClick={() => adjustTime("primary", -1)}>-</button>
+
             <input
               type="text"
               pattern="\d*"
@@ -323,13 +373,27 @@ const ToDoItem = ({
                 ? "00"
                 : String(primaryDuration % 60).padStart(2, "0")}
             </div>
-            <button
-              onClick={() =>
-                adjustTime("primary", primaryDuration < 90 * 60 ? 1 : 0)
-              }
-            >
-              +
-            </button>
+            <div className="timer-btn-container">
+              <button
+                className="timer-change-btn timer-change-btn-plus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (primaryDuration < 90 * 60)
+                    setPrimaryDuration(primaryDuration + 60);
+                }}
+              >
+                +
+              </button>
+              <button
+                className="timer-change-btn timer-change-btn-minus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPrimaryDuration(Math.max(0, primaryDuration - 60));
+                }}
+              >
+                -
+              </button>
+            </div>
             <button onClick={() => adjustTime("secondary", -1)}>-</button>
             <input
               type="text"
