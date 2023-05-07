@@ -37,6 +37,22 @@
   }
 }
 
+[contentEditable] {
+  cursor: text;
+  min-height: 1.2em;
+  padding: 3px;
+}
+
+[contentEditable]::selection {
+  background-color: rgba(255, 255, 255, 0.99);
+  color: #333;
+}
+
+[contentEditable]::-moz-selection {
+  background-color: rgba(255, 255, 255, 0.99);
+  color: #333;
+}
+
 body {
   background-color: #333;
   color: #ccc;
@@ -56,7 +72,7 @@ form {
   margin-bottom: 1.5rem;
 }
 
-input[type='text'] {
+input[type="text"] {
   padding: 0.5rem;
   font-size: 1rem;
   flex-grow: 1;
@@ -89,7 +105,7 @@ li {
   margin-bottom: 0.5rem;
 }
 
-input[type='checkbox'] {
+input[type="checkbox"] {
   margin-right: 1rem;
 }
 
@@ -97,8 +113,139 @@ span {
   flex-grow: 1;
 }
 
+.hidden-timer-input:-moz-focusring {
+  outline: none;
+}
+
+.hidden-timer-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #000000; /* Change the color here */
+}
+
 .hidden-timer-input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
+  outline: none;
+  box-shadow: 0 0 0 2px #000000;
+}
+
+.timer-input {
+  width: 1.1rem;
+  max-width: 1.1rem;
+  margin: 0 0.1rem;
+  background-color: transparent;
+  border: none; /* Remove border */
+  color: transparent;
+  font-size: 1rem;
+  text-align: center;
+  outline: none; /* Remove outline */
+  moz-appearance: textfield;
+}
+
+/*const timerDisplayStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '1.2rem',
+  margin: '0 0.5rem',
+  marginRight: '0.03rem',
+  marginLeft: '.4rem',
+};
+*/
+.timer-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.timer-input:focus {
+  border-color: #666; /* Add this line */
+}
+
+.cycle-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+}
+
+.cycle-input-field {
+  margin-left: 0.5rem;
+  width: 2.2rem;
+  max-width: 2.2rem;
+  height: 2.1rem;
+  max-height: 2.1rem;
+  font-size: 1rem;
+  text-align: center;
+  border-width: 1px;
+  border-color: transparent;
+  background-color: transparent;
+  color: #ccc;
+  -moz-appearance: textfield;
+  padding: 0;
+  outline: none;
+  transition: transform 0.2s ease; /* Add this for smooth transition */
+}
+
+.cycle-input-field::-webkit-outer-spin-button,
+.cycle-input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cycle-input-field:focus {
+  border-color: #666;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  background-color: #444;
+  outline: none;
+}
+
+.cycle-btn-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.cycle-change-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #666;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.cycle-change-btn-plus {
+  border-bottom: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+}
+
+.cycle-change-btn-minus {
+  border-radius: 0 0 4px 4px;
+}
+
+.timer-btn-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.timer-change-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #666;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.timer-change-btn-plus {
+  border-bottom: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+}
+
+.timer-change-btn-minus {
+  border-radius: 0 0 4px 4px;
 }
