@@ -9,10 +9,11 @@ const ToDoList = () => {
   const [nextTaskId, setNextTaskId] = useState(null);
 
   const handleToggle = (id) => {
-    const newTodos = todos.map((todo) =>
-      todo.id === id ? { ...todo, complete: !todo.complete } : todo
-    );
-    setTodos(newTodos);
+    // ...rest of the existing code
+    const completedTask = todos.find((todo) => todo.id === id);
+    if (completedTask.tilDone) {
+      handleCyclesCompleted(todos.indexOf(completedTask));
+    }
   };
 
   const handleDelete = (id) => {
@@ -40,9 +41,17 @@ const ToDoList = () => {
     task,
     primaryDuration,
     secondaryDuration,
-    numCycles
+    numCycles,
+    tilDone
   ) => {
-    console.log("Task:", task, primaryDuration, secondaryDuration, numCycles);
+    console.log(
+      "Task:",
+      task,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+      tilDone
+    );
     const newTodo = {
       id: Date.now(),
       task: task,
@@ -50,6 +59,7 @@ const ToDoList = () => {
       primaryDuration: primaryDuration,
       secondaryDuration: secondaryDuration,
       numCycles: numCycles,
+      tilDone: tilDone,
     };
     setTodos([...todos, newTodo]);
   };
@@ -84,6 +94,7 @@ const ToDoList = () => {
           onDelete={() => handleDelete(todo.id)}
           nextTaskId={nextTaskId}
           onCyclesCompleted={() => handleCyclesCompleted(todo.id)}
+          tilDone={todo.tilDone}
         />
       ))}
     </DndProvider>

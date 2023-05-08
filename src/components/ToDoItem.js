@@ -16,6 +16,7 @@ const ToDoItem = ({
   handleUpdate,
   onCyclesCompleted,
   nextTaskId,
+  tilDone,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -50,13 +51,17 @@ const ToDoItem = ({
 
   useEffect(() => {
     let timer;
-    if (isRunning && timeLeft > 0) {
+    if (isRunning && timeLeft > 0 && !tilDone) {
       timer = setInterval(() => {
-        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+        if (tilDone) {
+          setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
+        } else {
+          setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+        }
       }, 1000);
     } else if (!isRunning) {
       clearInterval(timer);
-    } else if (timeLeft === 0) {
+    } else if (!tilDone && timeLeft === 0) {
       clearInterval(timer);
 
       const playSound = (times) => {
@@ -72,7 +77,7 @@ const ToDoItem = ({
         setTimeout(() => playSound(times - 1), audioDuration);
       };
 
-      playSound(8);
+      playSound(3);
 
       if (!isPrimary) {
         if (currentCycle < numCycles - 1) {
@@ -83,19 +88,25 @@ const ToDoItem = ({
         }
       }
       setIsPrimary(!isPrimary);
-      setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
+      setTimeLeft((prevState) =>
+        isPrimary ? secondaryDuration : primaryDuration
+      );
+    } else if (tilDone) {
+      timer = setInterval(() => {
+        setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
+      }, 1000);
     }
-
     return () => clearInterval(timer);
   }, [
     isRunning,
-    timeLeft,
     primaryDuration,
     secondaryDuration,
     isPrimary,
     currentCycle,
     numCycles,
     onCyclesCompleted,
+    timeLeft,
+    tilDone,
   ]);
 
   const toggleEdit = () => {
@@ -115,12 +126,12 @@ const ToDoItem = ({
 
   const adjustTime = (type, delta) => {
     if (type === "primary") {
-      setPrimaryDuration((prevDuration) =>
-        Math.max(0, prevDuration + delta * 60)
+      setPrimaryDuration(
+        (prevDuration) => Math.max(0, prevDuration + delta) * 60 // Convert delta from seconds to minutes, then multiply by 60 to convert back to seconds
       );
     } else if (type === "secondary") {
-      setSecondaryDuration((prevDuration) =>
-        Math.max(0, prevDuration + delta * 60)
+      setSecondaryDuration(
+        (prevDuration) => Math.max(0, prevDuration + delta) * 60 // Convert delta from seconds to minutes, then multiply by 60 to convert back to seconds
       );
     }
   };
@@ -131,7 +142,7 @@ const ToDoItem = ({
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTimeLeft(primaryDuration);
+    setTimeLeft(tilDone ? 0 : primaryDuration);
     setIsPrimary(true);
   };
 
@@ -366,6 +377,7 @@ const ToDoItem = ({
                 setPrimaryDurationFocused(false);
                 setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
               }}
+              disabled={tilDone}
             />
             <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
             <div style={timerDisplayStyle}>
@@ -422,6 +434,7 @@ const ToDoItem = ({
                 setSecondaryDurationFocused(false);
                 setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
               }}
+              disabled={tilDone}
             />
             <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
             <div style={timerDisplayStyle}>
