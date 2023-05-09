@@ -57,8 +57,7 @@ const ToDoItem = ({
 
     const handleTaskCompletion = (onToggle) => {
       setIsRunning(false);
-      onToggle(id, true);
-      handleUpdate({
+      const updatedTask = {
         id,
         index,
         task,
@@ -67,26 +66,13 @@ const ToDoItem = ({
         numCycles,
         tilDone,
         isRunning: false,
-      });
-      setTimeout(() => {
-        onToggle(id, true);
-      }, 1);
+      };
+      handleUpdate(updatedTask);
+      onToggle(id, true);
     };
 
     if (isRunning && timeLeft > 0 && !tilDone) {
       runTimer();
-    } else if (!isRunning) {
-      clearInterval(timer);
-      handleUpdate({
-        id,
-        index,
-        task,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning: false,
-      });
     } else if (!tilDone && timeLeft === 0) {
       clearInterval(timer);
       playSound();
@@ -132,6 +118,19 @@ const ToDoItem = ({
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
+  };
+
+  const updateTask = () => {
+    handleUpdate({
+      id,
+      index,
+      task,
+      complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+    });
+    setIsEditing(false);
   };
 
   const colonDisplayStyle = {
@@ -283,6 +282,20 @@ const ToDoItem = ({
         type="checkbox"
         checked={complete}
         onChange={() => {
+          handleUpdate({
+            ...{
+              id,
+              index,
+              moveItem,
+              task,
+              complete,
+              primaryDuration,
+              secondaryDuration,
+              onToggle,
+              onDelete,
+              handleUpdate,
+            },
+          });
           onToggle();
         }}
       />
@@ -513,7 +526,7 @@ const ToDoItem = ({
           </>
         )}
         <button
-          onClick={toggleEdit}
+          onClick={isEditing ? updateTask : toggleEdit}
           style={{
             marginLeft: "1rem",
             minWidth: "70px",

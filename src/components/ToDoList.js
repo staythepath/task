@@ -7,7 +7,6 @@ import NewTaskForm from "./NewTaskForm";
 const ToDoList = () => {
   const [todos, setTodos] = useState([]);
   const [completedTodos, setCompletedTodos] = useState([]);
-  const [nextTaskId, setNextTaskId] = useState(null);
 
   const handleToggle = (id, completed = false) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
@@ -20,7 +19,12 @@ const ToDoList = () => {
       newTodos.splice(taskIndex, 1);
       setTodos(newTodos);
       if (updatedTask.complete) {
-        setCompletedTodos([...completedTodos, updatedTask]);
+        // Update the completed task with the correct values
+        const completedTask = {
+          ...updatedTask,
+        };
+        console.log("Updated task:", completedTask);
+        setCompletedTodos([...completedTodos, completedTask]);
       } else {
         setTodos([...newTodos, updatedTask]);
       }
@@ -35,7 +39,15 @@ const ToDoList = () => {
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
       setCompletedTodos(newCompletedTodos);
-      setTodos([...todos, updatedTask]);
+      // Update the incomplete task with the correct values
+      const incompleteTask = {
+        ...updatedTask,
+        primaryDuration: updatedTask.primaryDuration,
+        secondaryDuration: updatedTask.secondaryDuration,
+        numCycles: updatedTask.numCycles,
+        tilDone: updatedTask.tilDone,
+      };
+      setTodos([...todos, incompleteTask]);
     }
   };
 
@@ -48,7 +60,11 @@ const ToDoList = () => {
     const newTodos = todos.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
+    const newCompletedTodos = completedTodos.map((todo) =>
+      todo.id === updatedTask.id ? updatedTask : todo
+    );
     setTodos(newTodos);
+    setCompletedTodos(newCompletedTodos);
   };
 
   const handleNewTask = (
@@ -90,9 +106,6 @@ const ToDoList = () => {
     [todos]
   );
 
-  console.log("Todos:", todos);
-  console.log("Completed Todos:", completedTodos);
-
   return (
     <DndProvider backend={HTML5Backend}>
       <NewTaskForm onSubmit={handleNewTask} />
@@ -111,7 +124,6 @@ const ToDoList = () => {
           moveItem={moveItem}
           onToggle={() => handleToggle(todo.id)}
           onDelete={() => handleDelete(todo.id)}
-          nextTaskId={nextTaskId}
           tilDone={todo.tilDone}
           isRunning={todo.isRunning}
         />
@@ -131,7 +143,6 @@ const ToDoList = () => {
           moveItem={moveItem}
           onToggle={() => handleToggle(todo.id, index)}
           onDelete={() => handleDelete(todo.id)}
-          nextTaskId={nextTaskId}
           tilDone={todo.tilDone}
           isRunning={todo.isRunning}
         />
