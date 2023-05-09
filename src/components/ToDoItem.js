@@ -14,8 +14,10 @@ const ToDoItem = ({
   onToggle,
   onDelete,
   handleUpdate,
-  onCyclesCompleted,
-  nextTaskId,
+  tilDone,
+  runningTaskIndex,
+  setRunningTaskIndex,
+  isTaskInTodos,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -43,63 +45,106 @@ const ToDoItem = ({
   }, [primaryDuration, secondaryDuration, isPrimary]);
 
   useEffect(() => {
-    if (nextTaskId === id) {
+    if (index === runningTaskIndex && !tilDone && isTaskInTodos(id)) {
       setIsRunning(true);
     }
-  }, [nextTaskId, id]);
+  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
 
   useEffect(() => {
     let timer;
-    if (isRunning && timeLeft > 0) {
+
+    const playSound = () => {
+      const audio = new Audio("/beep.wav");
+      audio.play();
+    };
+
+    const runTimer = () => {
       timer = setInterval(() => {
         setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
       }, 1000);
-    } else if (!isRunning) {
-      clearInterval(timer);
-    } else if (timeLeft === 0) {
-      clearInterval(timer);
+    };
 
-      const playSound = (times) => {
-        if (times <= 0) return;
-
-        const audio = new Audio("/beep.wav");
-        audio.play();
-
-        // Set the duration of the audio file in milliseconds.
-        const audioDuration = 1500; // Adjust this value according to the length of your audio file.
-
-        // Wait for the audio to finish playing before playing it again.
-        setTimeout(() => playSound(times - 1), audioDuration);
+    const handleTaskCompletion = (onToggle) => {
+      setIsRunning(false);
+      const updatedTask = {
+        id,
+        index,
+        task,
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone,
+        isRunning: false,
       };
+      handleUpdate(updatedTask);
+      onToggle(id, true);
+      if (isTaskInTodos(id)) {
+        setRunningTaskIndex(index + 1 - 1);
+      }
+    };
 
-      playSound(8);
+    if (isRunning && timeLeft > 0 && !tilDone) {
+      runTimer();
+    } else if (!tilDone && timeLeft === 0) {
+      clearInterval(timer);
+      playSound();
 
-      if (!isPrimary) {
+      if (isPrimary) {
+        setIsPrimary(false);
+        setTimeLeft(secondaryDuration);
+        runTimer();
+      } else {
         if (currentCycle < numCycles - 1) {
           setCurrentCycle(currentCycle + 1);
+          setIsPrimary(true);
+          setTimeLeft(primaryDuration);
+          runTimer();
         } else {
-          setIsRunning(false);
-          onCyclesCompleted();
+          handleTaskCompletion(onToggle);
         }
       }
-      setIsPrimary(!isPrimary);
-      setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
+    } else if (tilDone && isRunning) {
+      timer = setInterval(() => {
+        setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
+      }, 1000);
     }
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+    };
   }, [
     isRunning,
-    timeLeft,
     primaryDuration,
     secondaryDuration,
     isPrimary,
     currentCycle,
     numCycles,
-    onCyclesCompleted,
+    timeLeft,
+    tilDone,
+    handleUpdate,
+    id,
+    index,
+    onToggle,
+    task,
+    setRunningTaskIndex,
+    isTaskInTodos,
   ]);
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
+  };
+
+  const updateTask = () => {
+    handleUpdate({
+      id,
+      index,
+      task,
+      complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+    });
+    setIsEditing(false);
   };
 
   const colonDisplayStyle = {
@@ -113,16 +158,9 @@ const ToDoItem = ({
     cursor: "text",
   };
 
-  const adjustTime = (type, delta) => {
-    if (type === "primary") {
-      setPrimaryDuration((prevDuration) =>
-        Math.max(0, prevDuration + delta * 60)
-      );
-    } else if (type === "secondary") {
-      setSecondaryDuration((prevDuration) =>
-        Math.max(0, prevDuration + delta * 60)
-      );
-    }
+  const crossedOutStyle = {
+    textDecoration: "line-through",
+    opacity: 0.5,
   };
 
   const toggleTimer = () => {
@@ -131,7 +169,7 @@ const ToDoItem = ({
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTimeLeft(primaryDuration);
+    setTimeLeft(tilDone ? 0 : primaryDuration);
     setIsPrimary(true);
   };
 
@@ -154,7 +192,7 @@ const ToDoItem = ({
   const handleRef = useRef(null);
   const [, drag] = useDrag({
     type: ItemTypes.TODO_ITEM,
-    item: { id, index },
+    item: { id, index, complete },
   });
   const [, drop] = useDrop({
     accept: ItemTypes.TODO_ITEM,
@@ -164,12 +202,13 @@ const ToDoItem = ({
       }
       const dragIndex = item.index;
       const hoverIndex = index;
+      const isCompleted = item.complete;
 
       if (dragIndex === hoverIndex) {
         return;
       }
 
-      moveItem(dragIndex, hoverIndex);
+      moveItem(dragIndex, hoverIndex, isCompleted);
       item.index = hoverIndex;
     },
   });
@@ -254,7 +293,28 @@ const ToDoItem = ({
           ></div>
         </div>
       </div>
-      <input type="checkbox" checked={complete} onChange={onToggle} />
+      <input
+        type="checkbox"
+        checked={complete}
+        onChange={() => {
+          handleUpdate({
+            ...{
+              id,
+              index,
+              moveItem,
+              task,
+              complete,
+              primaryDuration,
+              secondaryDuration,
+              onToggle,
+              onDelete,
+              handleUpdate,
+            },
+          });
+          onToggle();
+        }}
+      />
+
       {isEditing ? (
         <input
           type="text"
@@ -279,7 +339,7 @@ const ToDoItem = ({
           style={{ marginLeft: "1rem", marginRight: "1rem" }}
         />
       ) : (
-        <span>{task}</span>
+        <span style={complete ? crossedOutStyle : {}}>{task}</span>
       )}
 
       <div
@@ -366,6 +426,7 @@ const ToDoItem = ({
                 setPrimaryDurationFocused(false);
                 setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
               }}
+              disabled={tilDone}
             />
             <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
             <div style={timerDisplayStyle}>
@@ -394,7 +455,6 @@ const ToDoItem = ({
                 -
               </button>
             </div>
-            <button onClick={() => adjustTime("secondary", -1)}>-</button>
             <input
               type="text"
               pattern="\d*"
@@ -422,6 +482,7 @@ const ToDoItem = ({
                 setSecondaryDurationFocused(false);
                 setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
               }}
+              disabled={tilDone}
             />
             <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
             <div style={timerDisplayStyle}>
@@ -429,13 +490,27 @@ const ToDoItem = ({
                 ? "00"
                 : String(secondaryDuration % 60).padStart(2, "0")}
             </div>
-            <button
-              onClick={() =>
-                adjustTime("secondary", secondaryDuration < 90 * 60 ? 1 : 0)
-              }
-            >
-              +
-            </button>
+            <div className="timer-btn-container">
+              <button
+                className="timer-change-btn timer-change-btn-plus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (secondaryDuration < 90 * 60)
+                    setSecondaryDuration(secondaryDuration + 60);
+                }}
+              >
+                +
+              </button>
+              <button
+                className="timer-change-btn timer-change-btn-minus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSecondaryDuration(Math.max(0, secondaryDuration - 60));
+                }}
+              >
+                -
+              </button>
+            </div>
           </>
         )}
 
@@ -466,7 +541,7 @@ const ToDoItem = ({
           </>
         )}
         <button
-          onClick={toggleEdit}
+          onClick={isEditing ? updateTask : toggleEdit}
           style={{
             marginLeft: "1rem",
             minWidth: "70px",

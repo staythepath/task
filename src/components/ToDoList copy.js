@@ -7,70 +7,61 @@ import NewTaskForm from "./NewTaskForm";
 const ToDoList = () => {
   const [todos, setTodos] = useState([]);
   const [completedTodos, setCompletedTodos] = useState([]);
-  const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
+  const [nextTaskId, setNextTaskId] = useState(null);
 
-  const handleToggle = (id, completed = false) => {
-    const taskIndex = todos.findIndex((task) => task.id === id);
-    if (taskIndex !== -1) {
+  const handleToggle = useCallback((id) => {
+    setTodos((prevTodos) => {
+      const taskIndex = prevTodos.findIndex((task) => task.id === id);
+      if (taskIndex === -1) return prevTodos;
+
       const updatedTask = {
-        ...todos[taskIndex],
-        complete: completed || !todos[taskIndex].complete,
+        ...prevTodos[taskIndex],
+        complete: !prevTodos[taskIndex].complete,
       };
-      const newTodos = [...todos];
+      const newTodos = [...prevTodos];
       newTodos.splice(taskIndex, 1);
-      setTodos(newTodos);
+
       if (updatedTask.complete) {
-        // Update the completed task with the correct values
-        const completedTask = {
-          ...updatedTask,
-          isRunning: false,
-        };
-        console.log("Updated task:", completedTask);
-        setCompletedTodos([...completedTodos, completedTask]);
+        setCompletedTodos((prevCompletedTodos) => [
+          ...prevCompletedTodos,
+          updatedTask,
+        ]);
       } else {
-        setTodos([...newTodos, updatedTask]);
+        newTodos.push(updatedTask);
       }
-    } else {
-      const completedTaskIndex = completedTodos.findIndex(
-        (task) => task.id === id
-      );
+
+      return newTodos;
+    });
+
+    setCompletedTodos((prevCompletedTodos) => {
+      const taskIndex = prevCompletedTodos.findIndex((task) => task.id === id);
+      if (taskIndex === -1) return prevCompletedTodos;
+
       const updatedTask = {
-        ...completedTodos[completedTaskIndex],
-        complete: completed || !completedTodos[completedTaskIndex].complete,
+        ...prevCompletedTodos[taskIndex],
+        complete: !prevCompletedTodos[taskIndex].complete,
       };
-      const newCompletedTodos = [...completedTodos];
-      newCompletedTodos.splice(completedTaskIndex, 1);
-      setCompletedTodos(newCompletedTodos);
-      // Update the incomplete task with the correct values
-      const incompleteTask = {
-        ...updatedTask,
-        primaryDuration: updatedTask.primaryDuration,
-        secondaryDuration: updatedTask.secondaryDuration,
-        numCycles: updatedTask.numCycles,
-        tilDone: updatedTask.tilDone,
-      };
-      setTodos([...todos, incompleteTask]);
-    }
-  };
+      const newCompletedTodos = [...prevCompletedTodos];
+      newCompletedTodos.splice(taskIndex, 1);
+
+      if (!updatedTask.complete) {
+        setTodos((prevTodos) => [...prevTodos, updatedTask]);
+      }
+
+      return newCompletedTodos;
+    });
+  }, []);
 
   const handleDelete = (id) => {
     const newTodos = todos.filter((todo) => todo.id !== id);
     setTodos(newTodos);
   };
 
-  const isTaskInTodos = (taskId) => {
-    return todos.some((todo) => todo.id === taskId);
-  };
-
   const handleUpdate = (updatedTask) => {
     const newTodos = todos.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
-    const newCompletedTodos = completedTodos.map((todo) =>
-      todo.id === updatedTask.id ? updatedTask : todo
-    );
     setTodos(newTodos);
-    setCompletedTodos(newCompletedTodos);
   };
 
   const handleNewTask = (
@@ -102,21 +93,18 @@ const ToDoList = () => {
   };
 
   const moveItem = useCallback(
-    (dragIndex, hoverIndex, isCompleted = false) => {
-      const sourceList = isCompleted ? completedTodos : todos;
-      const draggedItem = sourceList[dragIndex];
-      const newList = [...sourceList];
-      newList.splice(dragIndex, 1);
-      newList.splice(hoverIndex, 0, draggedItem);
-
-      if (isCompleted) {
-        setCompletedTodos(newList);
-      } else {
-        setTodos(newList);
-      }
+    (dragIndex, hoverIndex) => {
+      const draggedItem = todos[dragIndex];
+      const newTodos = [...todos];
+      newTodos.splice(dragIndex, 1);
+      newTodos.splice(hoverIndex, 0, draggedItem);
+      setTodos(newTodos);
     },
-    [todos, completedTodos]
+    [todos]
   );
+
+  console.log("Todos:", todos);
+  console.log("Completed Todos:", completedTodos);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -136,11 +124,9 @@ const ToDoList = () => {
           moveItem={moveItem}
           onToggle={() => handleToggle(todo.id)}
           onDelete={() => handleDelete(todo.id)}
+          nextTaskId={nextTaskId}
           tilDone={todo.tilDone}
           isRunning={todo.isRunning}
-          runningTaskIndex={runningTaskIndex}
-          setRunningTaskIndex={setRunningTaskIndex}
-          isTaskInTodos={isTaskInTodos}
         />
       ))}
       <h3>Completed Tasks</h3>
@@ -156,13 +142,11 @@ const ToDoList = () => {
           secondaryDuration={todo.secondaryDuration}
           numCycles={todo.numCycles}
           moveItem={moveItem}
-          onToggle={() => handleToggle(todo.id, index)}
+          onToggle={() => handleToggle(todo.id)}
           onDelete={() => handleDelete(todo.id)}
+          nextTaskId={nextTaskId}
           tilDone={todo.tilDone}
-          isRunning={false}
-          runningTaskIndex={runningTaskIndex}
-          setRunningTaskIndex={setRunningTaskIndex}
-          isTaskInTodos={isTaskInTodos}
+          isRunning={todo.isRunning}
         />
       ))}
     </DndProvider>

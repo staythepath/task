@@ -5,6 +5,7 @@ const NewTaskForm = ({ onSubmit }) => {
   const [primaryDuration, setPrimaryDuration] = useState(25 * 60);
   const [secondaryDuration, setSecondaryDuration] = useState(5 * 60);
   const [numCycles, setNumCycles] = useState(1);
+  const [tilDone, setTilDone] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,13 +15,32 @@ const NewTaskForm = ({ onSubmit }) => {
         task.trim(),
         primaryDuration * 60,
         secondaryDuration * 60,
-        numCycles
+        numCycles,
+        tilDone
       );
-      onSubmit(task.trim(), primaryDuration, secondaryDuration, numCycles);
+      onSubmit(
+        task.trim(),
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone
+      );
       setTask("");
       setPrimaryDuration(25 * 60);
       setSecondaryDuration(5 * 60);
       setNumCycles(1);
+      setTilDone(false);
+      if (tilDone) {
+        onSubmit(task.trim(), 0, 0, numCycles, tilDone);
+      } else {
+        onSubmit(
+          task.trim(),
+          primaryDuration,
+          secondaryDuration,
+          numCycles,
+          tilDone
+        );
+      }
     }
   };
 
@@ -49,39 +69,30 @@ const NewTaskForm = ({ onSubmit }) => {
     cursor: "text",
   };
 
+  const countdownDisplayStyle = {
+    width: "3rem",
+    textAlign: "center",
+    marginRight: "1rem",
+  };
+
   return (
     <form onSubmit={handleSubmit}>
-      <input
-        id="new-task-form-hidden-input-primary"
-        type="number"
-        style={{ outline: "2px solid #000000" }}
-        value={primaryDuration / 60}
-        onChange={(e) =>
-          setPrimaryDuration(Math.max(0, parseInt(e.target.value, 10) * 60))
-        }
-        className="hidden-timer-input"
-        min="0"
-        max="90"
-      />
-      <input
-        id="new-task-form-hidden-input-secondary"
-        type="number"
-        style={{ outline: "2px solid #000000" }}
-        value={secondaryDuration / 60}
-        onChange={(e) =>
-          setSecondaryDuration(Math.max(0, parseInt(e.target.value, 10) * 60))
-        }
-        className="hidden-timer-input"
-        min="0"
-        max="90"
-      />
-
       <input
         type="text"
         value={task}
         onChange={(e) => setTask(e.target.value)}
         placeholder="Add new task"
       />
+
+      <label htmlFor="til-done">
+        <input
+          type="checkbox"
+          id="til-done"
+          checked={tilDone}
+          onChange={() => setTilDone(!tilDone)}
+        />
+        Til Done
+      </label>
 
       <div className="cycle-input">
         <input
@@ -90,17 +101,22 @@ const NewTaskForm = ({ onSubmit }) => {
           className="cycle-input-field"
           value={numCycles}
           onChange={(e) => setNumCycles(parseInt(e.target.value))}
+          disabled={tilDone}
         />
         <div className="cycle-btn-container">
           <button
+            type="button"
             className="cycle-change-btn cycle-change-btn-plus"
             onClick={() => setNumCycles(numCycles + 1)}
+            disabled={tilDone}
           >
             +
           </button>
           <button
+            type="button"
             className="cycle-change-btn cycle-change-btn-minus"
             onClick={() => setNumCycles(Math.max(1, numCycles - 1))}
+            disabled={tilDone}
           >
             -
           </button>
@@ -132,6 +148,7 @@ const NewTaskForm = ({ onSubmit }) => {
           setPrimaryDurationFocused(false);
           setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
         }}
+        disabled={tilDone}
       />
       <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
       <div style={timerDisplayStyle}>
@@ -143,6 +160,7 @@ const NewTaskForm = ({ onSubmit }) => {
       <div className="timer-btn-container">
         <button
           className="timer-change-btn timer-change-btn-plus"
+          disabled={tilDone}
           onClick={(e) => {
             e.preventDefault();
             if (primaryDuration < 90 * 60)
@@ -153,6 +171,7 @@ const NewTaskForm = ({ onSubmit }) => {
         </button>
         <button
           className="timer-change-btn timer-change-btn-minus"
+          disabled={tilDone}
           onClick={(e) => {
             e.preventDefault();
             setPrimaryDuration(Math.max(0, primaryDuration - 60));
@@ -186,6 +205,7 @@ const NewTaskForm = ({ onSubmit }) => {
           setSecondaryDurationFocused(false);
           setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
         }}
+        disabled={tilDone}
       />
       <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
       <div style={timerDisplayStyle}>
@@ -196,6 +216,7 @@ const NewTaskForm = ({ onSubmit }) => {
       <div className="timer-btn-container">
         <button
           className="timer-change-btn timer-change-btn-plus"
+          disabled={tilDone}
           onClick={(e) => {
             e.preventDefault();
             if (secondaryDuration < 90 * 60)
@@ -206,6 +227,7 @@ const NewTaskForm = ({ onSubmit }) => {
         </button>
         <button
           className="timer-change-btn timer-change-btn-minus"
+          disabled={tilDone}
           onClick={(e) => {
             e.preventDefault();
             setSecondaryDuration(Math.max(0, secondaryDuration - 60));
@@ -213,6 +235,15 @@ const NewTaskForm = ({ onSubmit }) => {
         >
           -
         </button>
+      </div>
+
+      <div style={countdownDisplayStyle}>
+        <input
+          type="text"
+          value={primaryDuration / 60 + ":00"}
+          readOnly
+          style={{ width: "100%", textAlign: "center", marginLeft: ".5rem" }}
+        />
       </div>
 
       <button type="submit" style={{ marginLeft: "1rem" }}>
