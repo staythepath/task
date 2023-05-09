@@ -7,6 +7,7 @@ import NewTaskForm from "./NewTaskForm";
 const ToDoList = () => {
   const [todos, setTodos] = useState([]);
   const [completedTodos, setCompletedTodos] = useState([]);
+  const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
   const handleToggle = (id, completed = false) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
@@ -22,6 +23,7 @@ const ToDoList = () => {
         // Update the completed task with the correct values
         const completedTask = {
           ...updatedTask,
+          isRunning: false,
         };
         console.log("Updated task:", completedTask);
         setCompletedTodos([...completedTodos, completedTask]);
@@ -54,6 +56,10 @@ const ToDoList = () => {
   const handleDelete = (id) => {
     const newTodos = todos.filter((todo) => todo.id !== id);
     setTodos(newTodos);
+  };
+
+  const isTaskInTodos = (taskId) => {
+    return todos.some((todo) => todo.id === taskId);
   };
 
   const handleUpdate = (updatedTask) => {
@@ -96,14 +102,20 @@ const ToDoList = () => {
   };
 
   const moveItem = useCallback(
-    (dragIndex, hoverIndex) => {
-      const draggedItem = todos[dragIndex];
-      const newTodos = [...todos];
-      newTodos.splice(dragIndex, 1);
-      newTodos.splice(hoverIndex, 0, draggedItem);
-      setTodos(newTodos);
+    (dragIndex, hoverIndex, isCompleted = false) => {
+      const sourceList = isCompleted ? completedTodos : todos;
+      const draggedItem = sourceList[dragIndex];
+      const newList = [...sourceList];
+      newList.splice(dragIndex, 1);
+      newList.splice(hoverIndex, 0, draggedItem);
+
+      if (isCompleted) {
+        setCompletedTodos(newList);
+      } else {
+        setTodos(newList);
+      }
     },
-    [todos]
+    [todos, completedTodos]
   );
 
   return (
@@ -126,6 +138,9 @@ const ToDoList = () => {
           onDelete={() => handleDelete(todo.id)}
           tilDone={todo.tilDone}
           isRunning={todo.isRunning}
+          runningTaskIndex={runningTaskIndex}
+          setRunningTaskIndex={setRunningTaskIndex}
+          isTaskInTodos={isTaskInTodos}
         />
       ))}
       <h3>Completed Tasks</h3>
@@ -144,7 +159,10 @@ const ToDoList = () => {
           onToggle={() => handleToggle(todo.id, index)}
           onDelete={() => handleDelete(todo.id)}
           tilDone={todo.tilDone}
-          isRunning={todo.isRunning}
+          isRunning={false}
+          runningTaskIndex={runningTaskIndex}
+          setRunningTaskIndex={setRunningTaskIndex}
+          isTaskInTodos={isTaskInTodos}
         />
       ))}
     </DndProvider>

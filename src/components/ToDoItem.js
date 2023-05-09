@@ -15,6 +15,9 @@ const ToDoItem = ({
   onDelete,
   handleUpdate,
   tilDone,
+  runningTaskIndex,
+  setRunningTaskIndex,
+  isTaskInTodos,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -40,6 +43,12 @@ const ToDoItem = ({
   useEffect(() => {
     setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
   }, [primaryDuration, secondaryDuration, isPrimary]);
+
+  useEffect(() => {
+    if (index === runningTaskIndex && !tilDone && isTaskInTodos(id)) {
+      setIsRunning(true);
+    }
+  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
 
   useEffect(() => {
     let timer;
@@ -69,6 +78,9 @@ const ToDoItem = ({
       };
       handleUpdate(updatedTask);
       onToggle(id, true);
+      if (isTaskInTodos(id)) {
+        setRunningTaskIndex(index + 1 - 1);
+      }
     };
 
     if (isRunning && timeLeft > 0 && !tilDone) {
@@ -91,7 +103,7 @@ const ToDoItem = ({
           handleTaskCompletion(onToggle);
         }
       }
-    } else if (tilDone) {
+    } else if (tilDone && isRunning) {
       timer = setInterval(() => {
         setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
       }, 1000);
@@ -114,6 +126,8 @@ const ToDoItem = ({
     index,
     onToggle,
     task,
+    setRunningTaskIndex,
+    isTaskInTodos,
   ]);
 
   const toggleEdit = () => {
@@ -178,7 +192,7 @@ const ToDoItem = ({
   const handleRef = useRef(null);
   const [, drag] = useDrag({
     type: ItemTypes.TODO_ITEM,
-    item: { id, index },
+    item: { id, index, complete },
   });
   const [, drop] = useDrop({
     accept: ItemTypes.TODO_ITEM,
@@ -188,12 +202,13 @@ const ToDoItem = ({
       }
       const dragIndex = item.index;
       const hoverIndex = index;
+      const isCompleted = item.complete;
 
       if (dragIndex === hoverIndex) {
         return;
       }
 
-      moveItem(dragIndex, hoverIndex);
+      moveItem(dragIndex, hoverIndex, isCompleted);
       item.index = hoverIndex;
     },
   });

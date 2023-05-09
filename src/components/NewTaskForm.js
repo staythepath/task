@@ -69,6 +69,12 @@ const NewTaskForm = ({ onSubmit }) => {
     cursor: "text",
   };
 
+  const countdownDisplayStyle = {
+    width: "3rem",
+    textAlign: "center",
+    marginRight: "1rem",
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <input
@@ -229,6 +235,15 @@ const NewTaskForm = ({ onSubmit }) => {
         >
           -
         </button>
+      </div>
+
+      <div style={countdownDisplayStyle}>
+        <input
+          type="text"
+          value={primaryDuration / 60 + ":00"}
+          readOnly
+          style={{ width: "100%", textAlign: "center", marginLeft: ".5rem" }}
+        />
       </div>
 
       <button type="submit" style={{ marginLeft: "1rem" }}>
