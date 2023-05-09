@@ -14,8 +14,6 @@ const ToDoItem = ({
   onToggle,
   onDelete,
   handleUpdate,
-  onCyclesCompleted,
-  nextTaskId,
   tilDone,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
@@ -44,59 +42,78 @@ const ToDoItem = ({
   }, [primaryDuration, secondaryDuration, isPrimary]);
 
   useEffect(() => {
-    if (nextTaskId === id) {
-      setIsRunning(true);
-    }
-  }, [nextTaskId, id]);
-
-  useEffect(() => {
     let timer;
-    if (isRunning && timeLeft > 0 && !tilDone) {
+
+    const playSound = () => {
+      const audio = new Audio("/beep.wav");
+      audio.play();
+    };
+
+    const runTimer = () => {
       timer = setInterval(() => {
-        if (tilDone) {
-          setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
-        } else {
-          setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-        }
+        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
       }, 1000);
+    };
+
+    const handleTaskCompletion = (onToggle) => {
+      setIsRunning(false);
+      onToggle(id, true);
+      handleUpdate({
+        id,
+        index,
+        task,
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone,
+        isRunning: false,
+      });
+      setTimeout(() => {
+        onToggle(id, true);
+      }, 1);
+    };
+
+    if (isRunning && timeLeft > 0 && !tilDone) {
+      runTimer();
     } else if (!isRunning) {
       clearInterval(timer);
+      handleUpdate({
+        id,
+        index,
+        task,
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone,
+        isRunning: false,
+      });
     } else if (!tilDone && timeLeft === 0) {
       clearInterval(timer);
+      playSound();
 
-      const playSound = (times) => {
-        if (times <= 0) return;
-
-        const audio = new Audio("/beep.wav");
-        audio.play();
-
-        // Set the duration of the audio file in milliseconds.
-        const audioDuration = 1500; // Adjust this value according to the length of your audio file.
-
-        // Wait for the audio to finish playing before playing it again.
-        setTimeout(() => playSound(times - 1), audioDuration);
-      };
-
-      playSound(3);
-
-      if (!isPrimary) {
+      if (isPrimary) {
+        setIsPrimary(false);
+        setTimeLeft(secondaryDuration);
+        runTimer();
+      } else {
         if (currentCycle < numCycles - 1) {
           setCurrentCycle(currentCycle + 1);
+          setIsPrimary(true);
+          setTimeLeft(primaryDuration);
+          runTimer();
         } else {
-          setIsRunning(false);
-          onCyclesCompleted();
+          handleTaskCompletion(onToggle);
         }
       }
-      setIsPrimary(!isPrimary);
-      setTimeLeft((prevState) =>
-        isPrimary ? secondaryDuration : primaryDuration
-      );
     } else if (tilDone) {
       timer = setInterval(() => {
         setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
       }, 1000);
     }
-    return () => clearInterval(timer);
+
+    return () => {
+      clearInterval(timer);
+    };
   }, [
     isRunning,
     primaryDuration,
@@ -104,7 +121,6 @@ const ToDoItem = ({
     isPrimary,
     currentCycle,
     numCycles,
-    onCyclesCompleted,
     timeLeft,
     tilDone,
   ]);
@@ -124,16 +140,9 @@ const ToDoItem = ({
     cursor: "text",
   };
 
-  const adjustTime = (type, delta) => {
-    if (type === "primary") {
-      setPrimaryDuration(
-        (prevDuration) => Math.max(0, prevDuration + delta) * 60 // Convert delta from seconds to minutes, then multiply by 60 to convert back to seconds
-      );
-    } else if (type === "secondary") {
-      setSecondaryDuration(
-        (prevDuration) => Math.max(0, prevDuration + delta) * 60 // Convert delta from seconds to minutes, then multiply by 60 to convert back to seconds
-      );
-    }
+  const crossedOutStyle = {
+    textDecoration: "line-through",
+    opacity: 0.5,
   };
 
   const toggleTimer = () => {
@@ -265,7 +274,14 @@ const ToDoItem = ({
           ></div>
         </div>
       </div>
-      <input type="checkbox" checked={complete} onChange={onToggle} />
+      <input
+        type="checkbox"
+        checked={complete}
+        onChange={() => {
+          onToggle();
+        }}
+      />
+
       {isEditing ? (
         <input
           type="text"
@@ -290,7 +306,7 @@ const ToDoItem = ({
           style={{ marginLeft: "1rem", marginRight: "1rem" }}
         />
       ) : (
-        <span>{task}</span>
+        <span style={complete ? crossedOutStyle : {}}>{task}</span>
       )}
 
       <div
@@ -406,7 +422,6 @@ const ToDoItem = ({
                 -
               </button>
             </div>
-            <button onClick={() => adjustTime("secondary", -1)}>-</button>
             <input
               type="text"
               pattern="\d*"
@@ -442,13 +457,27 @@ const ToDoItem = ({
                 ? "00"
                 : String(secondaryDuration % 60).padStart(2, "0")}
             </div>
-            <button
-              onClick={() =>
-                adjustTime("secondary", secondaryDuration < 90 * 60 ? 1 : 0)
-              }
-            >
-              +
-            </button>
+            <div className="timer-btn-container">
+              <button
+                className="timer-change-btn timer-change-btn-plus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (secondaryDuration < 90 * 60)
+                    setSecondaryDuration(secondaryDuration + 60);
+                }}
+              >
+                +
+              </button>
+              <button
+                className="timer-change-btn timer-change-btn-minus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSecondaryDuration(Math.max(0, secondaryDuration - 60));
+                }}
+              >
+                -
+              </button>
+            </div>
           </>
         )}
 

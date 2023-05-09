@@ -9,35 +9,48 @@ const ToDoList = () => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [nextTaskId, setNextTaskId] = useState(null);
 
-  const handleToggle = (id, completed = false) => {
-    const taskIndex = todos.findIndex((task) => task.id === id);
-    if (taskIndex !== -1) {
+  const handleToggle = useCallback((id) => {
+    setTodos((prevTodos) => {
+      const taskIndex = prevTodos.findIndex((task) => task.id === id);
+      if (taskIndex === -1) return prevTodos;
+
       const updatedTask = {
-        ...todos[taskIndex],
-        complete: completed || !todos[taskIndex].complete,
+        ...prevTodos[taskIndex],
+        complete: !prevTodos[taskIndex].complete,
       };
-      const newTodos = [...todos];
+      const newTodos = [...prevTodos];
       newTodos.splice(taskIndex, 1);
-      setTodos(newTodos);
+
       if (updatedTask.complete) {
-        setCompletedTodos([...completedTodos, updatedTask]);
+        setCompletedTodos((prevCompletedTodos) => [
+          ...prevCompletedTodos,
+          updatedTask,
+        ]);
       } else {
-        setTodos([...newTodos, updatedTask]);
+        newTodos.push(updatedTask);
       }
-    } else {
-      const completedTaskIndex = completedTodos.findIndex(
-        (task) => task.id === id
-      );
+
+      return newTodos;
+    });
+
+    setCompletedTodos((prevCompletedTodos) => {
+      const taskIndex = prevCompletedTodos.findIndex((task) => task.id === id);
+      if (taskIndex === -1) return prevCompletedTodos;
+
       const updatedTask = {
-        ...completedTodos[completedTaskIndex],
-        complete: completed || !completedTodos[completedTaskIndex].complete,
+        ...prevCompletedTodos[taskIndex],
+        complete: !prevCompletedTodos[taskIndex].complete,
       };
-      const newCompletedTodos = [...completedTodos];
-      newCompletedTodos.splice(completedTaskIndex, 1);
-      setCompletedTodos(newCompletedTodos);
-      setTodos([...todos, updatedTask]);
-    }
-  };
+      const newCompletedTodos = [...prevCompletedTodos];
+      newCompletedTodos.splice(taskIndex, 1);
+
+      if (!updatedTask.complete) {
+        setTodos((prevTodos) => [...prevTodos, updatedTask]);
+      }
+
+      return newCompletedTodos;
+    });
+  }, []);
 
   const handleDelete = (id) => {
     const newTodos = todos.filter((todo) => todo.id !== id);
@@ -129,7 +142,7 @@ const ToDoList = () => {
           secondaryDuration={todo.secondaryDuration}
           numCycles={todo.numCycles}
           moveItem={moveItem}
-          onToggle={() => handleToggle(todo.id, index)}
+          onToggle={() => handleToggle(todo.id)}
           onDelete={() => handleDelete(todo.id)}
           nextTaskId={nextTaskId}
           tilDone={todo.tilDone}

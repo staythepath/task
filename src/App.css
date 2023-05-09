@@ -249,3 +249,7 @@ span {
 .timer-change-btn-minus {
   border-radius: 0 0 4px 4px;
 }
+
+.strike-through {
+  text-decoration: line-through;
+}
