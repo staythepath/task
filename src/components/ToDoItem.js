@@ -123,6 +123,11 @@ const ToDoItem = ({
     numCycles,
     timeLeft,
     tilDone,
+    handleUpdate,
+    id,
+    index,
+    onToggle,
+    task,
   ]);
 
   const toggleEdit = () => {
