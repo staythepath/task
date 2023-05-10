@@ -9,23 +9,22 @@ const ToDoList = () => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
-  const handleToggle = (id, completed = false) => {
+  const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
     if (taskIndex !== -1) {
       const updatedTask = {
         ...todos[taskIndex],
-        complete: completed || !todos[taskIndex].complete,
+        complete:
+          completed !== undefined ? completed : !todos[taskIndex].complete,
       };
       const newTodos = [...todos];
       newTodos.splice(taskIndex, 1);
       setTodos(newTodos);
       if (updatedTask.complete) {
-        // Update the completed task with the correct values
         const completedTask = {
           ...updatedTask,
           isRunning: false,
         };
-        console.log("Updated task:", completedTask);
         setCompletedTodos([...completedTodos, completedTask]);
       } else {
         setTodos([...newTodos, updatedTask]);
@@ -36,7 +35,7 @@ const ToDoList = () => {
       );
       const updatedTask = {
         ...completedTodos[completedTaskIndex],
-        complete: completed || !completedTodos[completedTaskIndex].complete,
+        complete: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
@@ -104,7 +103,11 @@ const ToDoList = () => {
   const moveItem = useCallback(
     (dragIndex, hoverIndex, isCompleted = false) => {
       const sourceList = isCompleted ? completedTodos : todos;
-      const draggedItem = sourceList[dragIndex];
+      const isRunningTask = sourceList[dragIndex].isRunning;
+      const draggedItem = {
+        ...sourceList[dragIndex],
+        isRunning: isRunningTask, // Keep the task running only if it was running before being moved
+      };
       const newList = [...sourceList];
       newList.splice(dragIndex, 1);
       newList.splice(hoverIndex, 0, draggedItem);
@@ -113,6 +116,10 @@ const ToDoList = () => {
         setCompletedTodos(newList);
       } else {
         setTodos(newList);
+        // If the task is moved to the top and is not the running task, make sure to update the runningTaskIndex to -1
+        if (hoverIndex === 0 && !isRunningTask) {
+          setRunningTaskIndex(-1);
+        }
       }
     },
     [todos, completedTodos]
@@ -134,7 +141,7 @@ const ToDoList = () => {
           secondaryDuration={todo.secondaryDuration}
           numCycles={todo.numCycles}
           moveItem={moveItem}
-          onToggle={() => handleToggle(todo.id)}
+          onToggle={() => handleToggle(todo.id)} // Set completed to false when unchecking
           onDelete={() => handleDelete(todo.id)}
           tilDone={todo.tilDone}
           isRunning={todo.isRunning}

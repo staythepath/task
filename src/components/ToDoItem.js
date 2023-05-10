@@ -32,8 +32,10 @@ const ToDoItem = ({
   const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
   const [secondaryDurationFocused, setSecondaryDurationFocused] =
     useState(false);
+  const [cyclesFocused, setCyclesFocused] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
+  const timeoutId = useRef(null);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -147,15 +149,21 @@ const ToDoItem = ({
     setIsEditing(false);
   };
 
-  const colonDisplayStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: ".01rem",
-    margin: "0 0rem",
-    lineHeight: "1",
-    verticalAlign: "middle",
-    cursor: "text",
+  const handleMouseDown = (operation, value, setValue) => {
+    const changeValue = () => {
+      setValue((prevValue) => operation(prevValue));
+    };
+
+    const accelerateChange = () => {
+      changeValue();
+      timeoutId.current = window.setTimeout(accelerateChange, 240);
+    };
+
+    accelerateChange();
+  };
+
+  const handleMouseUp = () => {
+    window.clearTimeout(timeoutId.current);
   };
 
   const crossedOutStyle = {
@@ -171,16 +179,6 @@ const ToDoItem = ({
     setIsRunning(false);
     setTimeLeft(tilDone ? 0 : primaryDuration);
     setIsPrimary(true);
-  };
-
-  const timerDisplayStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "1.2rem",
-    margin: "0 0.5rem",
-    marginRight: "0.03rem",
-    marginLeft: ".4rem",
   };
 
   const countdownDisplayStyle = {
@@ -297,21 +295,19 @@ const ToDoItem = ({
         type="checkbox"
         checked={complete}
         onChange={() => {
-          handleUpdate({
-            ...{
-              id,
-              index,
-              moveItem,
-              task,
-              complete,
-              primaryDuration,
-              secondaryDuration,
-              onToggle,
-              onDelete,
-              handleUpdate,
-            },
-          });
-          onToggle();
+          const updatedTask = {
+            id,
+            index,
+            task,
+            complete: !complete,
+            primaryDuration,
+            secondaryDuration,
+            numCycles,
+            tilDone,
+            isRunning: false,
+          };
+          handleUpdate(updatedTask);
+          onToggle(id, !complete);
         }}
       />
 
@@ -351,28 +347,65 @@ const ToDoItem = ({
       >
         {isEditing && (
           <>
-            <div className="cycle-input">
+            <div className="timer-btn-container">
+              <button
+                className="timer-change-btn timer-change-btn-plus"
+                disabled={tilDone}
+                onMouseDown={() =>
+                  handleMouseDown((prev) => prev + 1, numCycles, setNumCycles)
+                }
+                onMouseUp={handleMouseUp}
+                onTouchStart={() =>
+                  handleMouseDown((prev) => prev + 1, numCycles, setNumCycles)
+                }
+                onTouchEnd={handleMouseUp}
+              >
+                +
+              </button>
+              <button
+                className="timer-change-btn timer-change-btn-minus"
+                disabled={tilDone}
+                onMouseDown={() =>
+                  handleMouseDown(
+                    (prev) => Math.max(1, prev - 1),
+                    numCycles,
+                    setNumCycles
+                  )
+                }
+                onMouseUp={handleMouseUp}
+                onTouchStart={() =>
+                  handleMouseDown(
+                    (prev) => Math.max(1, prev - 1),
+                    numCycles,
+                    setNumCycles
+                  )
+                }
+                onTouchEnd={handleMouseUp}
+              >
+                -
+              </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ marginLeft: "1px", marginRight: "3px" }}>
+                Cycles:
+              </div>
               <input
-                type="number"
-                min="1"
-                className="cycle-input-field"
+                type="text"
+                pattern="\d*"
                 value={numCycles}
                 onChange={(e) => setNumCycles(parseInt(e.target.value))}
+                className="timer-input"
+                style={{
+                  borderColor: cyclesFocused ? "#666" : "transparent",
+                  backgroundColor: cyclesFocused ? "#444" : "transparent",
+                }}
+                onFocus={() => setCyclesFocused(true)}
+                onBlur={() => {
+                  setCyclesFocused(false);
+                  setCyclesFocused(Math.min(setNumCycles, 1));
+                }}
+                disabled={tilDone}
               />
-              <div className="cycle-btn-container">
-                <button
-                  className="cycle-change-btn cycle-change-btn-plus"
-                  onClick={() => setNumCycles(numCycles + 1)}
-                >
-                  +
-                </button>
-                <button
-                  className="cycle-change-btn cycle-change-btn-minus"
-                  onClick={() => setNumCycles(Math.max(1, numCycles - 1))}
-                >
-                  -
-                </button>
-              </div>
             </div>
             <input
               id={`todo-${id}-hidden-input-primary`}
@@ -399,117 +432,138 @@ const ToDoItem = ({
               min="0"
             />
 
-            <input
-              type="text"
-              pattern="\d*"
-              value={
-                isNaN(primaryDuration / 60) || primaryDuration === null
-                  ? "00"
-                  : Math.floor(primaryDuration / 60)
-              }
-              onChange={(e) => {
-                const value =
-                  e.target.value === "" ? 0 : parseInt(e.target.value, 10);
-                if (!isNaN(value)) {
-                  setPrimaryDuration(value * 60);
-                }
-              }}
-              className="timer-input"
-              style={{
-                borderColor: primaryDurationFocused ? "#666" : "transparent",
-                backgroundColor: primaryDurationFocused
-                  ? "#444"
-                  : "transparent",
-              }}
-              onFocus={() => setPrimaryDurationFocused(true)}
-              onBlur={() => {
-                setPrimaryDurationFocused(false);
-                setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
-              }}
-              disabled={tilDone}
-            />
-            <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
-            <div style={timerDisplayStyle}>
-              {isNaN(primaryDuration % 60) || primaryDuration === null
-                ? "00"
-                : String(primaryDuration % 60).padStart(2, "0")}
-            </div>
             <div className="timer-btn-container">
               <button
                 className="timer-change-btn timer-change-btn-plus"
-                onClick={(e) => {
+                disabled={tilDone}
+                onMouseDown={(e) => {
                   e.preventDefault();
-                  if (primaryDuration < 90 * 60)
-                    setPrimaryDuration(primaryDuration + 60);
+                  handleMouseDown(
+                    (value) => Math.min(value + 60, 90 * 60),
+                    primaryDuration,
+                    setPrimaryDuration
+                  );
                 }}
+                onMouseUp={handleMouseUp}
               >
                 +
               </button>
               <button
                 className="timer-change-btn timer-change-btn-minus"
-                onClick={(e) => {
+                disabled={tilDone}
+                onMouseDown={(e) => {
                   e.preventDefault();
-                  setPrimaryDuration(Math.max(0, primaryDuration - 60));
+                  handleMouseDown(
+                    (value) => Math.max(value - 60, 0),
+                    primaryDuration,
+                    setPrimaryDuration
+                  );
                 }}
+                onMouseUp={handleMouseUp}
               >
                 -
               </button>
             </div>
-            <input
-              type="text"
-              pattern="\d*"
-              value={
-                isNaN(secondaryDuration / 60) || secondaryDuration === null
-                  ? "00"
-                  : Math.floor(secondaryDuration / 60)
-              }
-              onChange={(e) => {
-                const value =
-                  e.target.value === "" ? 0 : parseInt(e.target.value, 10);
-                if (!isNaN(value)) {
-                  setSecondaryDuration(value * 60);
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ marginLeft: "1px" }}>Minutes:</div>
+              <input
+                type="text"
+                pattern="\d*"
+                value={
+                  isNaN(primaryDuration / 60) || primaryDuration === null
+                    ? "00"
+                    : Math.floor(primaryDuration / 60)
                 }
-              }}
-              className="timer-input"
-              style={{
-                borderColor: secondaryDurationFocused ? "#666" : "transparent",
-                backgroundColor: secondaryDurationFocused
-                  ? "#444"
-                  : "transparent",
-              }}
-              onFocus={() => setSecondaryDurationFocused(true)}
-              onBlur={() => {
-                setSecondaryDurationFocused(false);
-                setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
-              }}
-              disabled={tilDone}
-            />
-            <div style={{ ...colonDisplayStyle, cursor: "default" }}>:</div>
-            <div style={timerDisplayStyle}>
-              {isNaN(secondaryDuration % 60) || secondaryDuration === null
-                ? "00"
-                : String(secondaryDuration % 60).padStart(2, "0")}
+                onChange={(e) => {
+                  const value =
+                    e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(value)) {
+                    setPrimaryDuration(value * 60);
+                  }
+                }}
+                className="timer-input"
+                style={{
+                  borderColor: primaryDurationFocused ? "#666" : "transparent",
+                  backgroundColor: primaryDurationFocused
+                    ? "#444"
+                    : "transparent",
+                }}
+                onFocus={() => setPrimaryDurationFocused(true)}
+                onBlur={() => {
+                  setPrimaryDurationFocused(false);
+                  setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
+                }}
+                disabled={tilDone}
+              />
             </div>
             <div className="timer-btn-container">
               <button
                 className="timer-change-btn timer-change-btn-plus"
-                onClick={(e) => {
+                disabled={tilDone}
+                onMouseDown={(e) => {
                   e.preventDefault();
-                  if (secondaryDuration < 90 * 60)
-                    setSecondaryDuration(secondaryDuration + 60);
+                  handleMouseDown(
+                    (value) => Math.min(value + 60, 90 * 60),
+                    secondaryDuration,
+                    setSecondaryDuration
+                  );
                 }}
+                onMouseUp={handleMouseUp}
               >
                 +
               </button>
+
               <button
                 className="timer-change-btn timer-change-btn-minus"
-                onClick={(e) => {
+                disabled={tilDone}
+                onMouseDown={(e) => {
                   e.preventDefault();
-                  setSecondaryDuration(Math.max(0, secondaryDuration - 60));
+                  handleMouseDown(
+                    (value) => Math.max(value - 60, 0),
+                    secondaryDuration,
+                    setSecondaryDuration
+                  );
                 }}
+                onMouseUp={handleMouseUp}
               >
                 -
               </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ marginLeft: "1px", marginRight: "0px" }}>
+                Minutes:
+              </div>
+              <input
+                type="text"
+                pattern="\d*"
+                value={
+                  isNaN(secondaryDuration / 60) || secondaryDuration === null
+                    ? "00"
+                    : Math.floor(secondaryDuration / 60)
+                }
+                onChange={(e) => {
+                  const value =
+                    e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                  if (!isNaN(value)) {
+                    setSecondaryDuration(value * 60);
+                  }
+                }}
+                className="timer-input"
+                style={{
+                  borderColor: secondaryDurationFocused
+                    ? "#666"
+                    : "transparent",
+                  backgroundColor: secondaryDurationFocused
+                    ? "#444"
+                    : "transparent",
+                }}
+                onFocus={() => setSecondaryDurationFocused(true)}
+                onBlur={() => {
+                  setSecondaryDurationFocused(false);
+                  setSecondaryDuration(Math.min(secondaryDuration, 90 * 60));
+                }}
+                disabled={tilDone}
+              />
             </div>
           </>
         )}
