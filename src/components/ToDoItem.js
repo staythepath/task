@@ -55,18 +55,15 @@ const ToDoItem = ({
   useEffect(() => {
     let timer;
 
-    const playSound = () => {
-      const audio = new Audio("/beep.wav");
-      audio.play();
+    const playSound = (times = 3) => {
+      if (times > 0) {
+        const audio = new Audio("/beep.wav");
+        audio.play();
+        setTimeout(() => playSound(times - 1), 1000);
+      }
     };
 
-    const runTimer = () => {
-      timer = setInterval(() => {
-        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-      }, 1000);
-    };
-
-    const handleTaskCompletion = (onToggle) => {
+    const handleTaskCompletion = () => {
       setIsRunning(false);
       const updatedTask = {
         id,
@@ -81,39 +78,46 @@ const ToDoItem = ({
       handleUpdate(updatedTask);
       onToggle(id, true);
       if (isTaskInTodos(id)) {
-        setRunningTaskIndex(index + 1 - 1);
+        setRunningTaskIndex(index);
       }
     };
 
     if (isRunning && timeLeft > 0 && !tilDone) {
-      runTimer();
+      timer = setInterval(
+        () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
+        1000
+      );
     } else if (!tilDone && timeLeft === 0) {
       clearInterval(timer);
       playSound();
-
       if (isPrimary) {
         setIsPrimary(false);
         setTimeLeft(secondaryDuration);
-        runTimer();
+        timer = setInterval(
+          () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
+          1000
+        );
       } else {
+        setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
+        setIsPrimary(!isPrimary);
+        setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
         if (currentCycle < numCycles - 1) {
-          setCurrentCycle(currentCycle + 1);
-          setIsPrimary(true);
-          setTimeLeft(primaryDuration);
-          runTimer();
+          timer = setInterval(
+            () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
+            1000
+          );
         } else {
-          handleTaskCompletion(onToggle);
+          handleTaskCompletion();
         }
       }
     } else if (tilDone && isRunning) {
-      timer = setInterval(() => {
-        setTimeLeft((prevTimeLeft) => prevTimeLeft + 1);
-      }, 1000);
+      timer = setInterval(
+        () => setTimeLeft((prevTimeLeft) => prevTimeLeft + 1),
+        1000
+      );
     }
 
-    return () => {
-      clearInterval(timer);
-    };
+    return () => clearInterval(timer);
   }, [
     isRunning,
     primaryDuration,

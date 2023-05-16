@@ -128,7 +128,7 @@ const ToDoList = () => {
   return (
     <DndProvider backend={HTML5Backend}>
       <NewTaskForm onSubmit={handleNewTask} />
-      <h3>Incomplete Tasks</h3>
+      <h3>Not yet done</h3>
       {todos.map((todo, index) => (
         <ToDoItem
           key={todo.id}
@@ -150,7 +150,7 @@ const ToDoList = () => {
           isTaskInTodos={isTaskInTodos}
         />
       ))}
-      <h3>Completed Tasks</h3>
+      <h3>Donzo</h3>
       {completedTodos.map((todo, index) => (
         <ToDoItem
           key={todo.id}
