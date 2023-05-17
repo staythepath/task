@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from "react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import React, { useState } from "react";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
+
 import ToDoItem from "./ToDoItem";
 import NewTaskForm from "./NewTaskForm";
 
@@ -9,23 +9,22 @@ const ToDoList = () => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
-  const handleToggle = (id, completed = false) => {
+  const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
     if (taskIndex !== -1) {
       const updatedTask = {
         ...todos[taskIndex],
-        complete: completed || !todos[taskIndex].complete,
+        complete:
+          completed !== undefined ? completed : !todos[taskIndex].complete,
       };
       const newTodos = [...todos];
       newTodos.splice(taskIndex, 1);
       setTodos(newTodos);
       if (updatedTask.complete) {
-        // Update the completed task with the correct values
         const completedTask = {
           ...updatedTask,
           isRunning: false,
         };
-        console.log("Updated task:", completedTask);
         setCompletedTodos([...completedTodos, completedTask]);
       } else {
         setTodos([...newTodos, updatedTask]);
@@ -36,7 +35,7 @@ const ToDoList = () => {
       );
       const updatedTask = {
         ...completedTodos[completedTaskIndex],
-        complete: completed || !completedTodos[completedTaskIndex].complete,
+        complete: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
@@ -80,14 +79,6 @@ const ToDoList = () => {
     numCycles,
     tilDone
   ) => {
-    console.log(
-      "Task:",
-      task,
-      primaryDuration,
-      secondaryDuration,
-      numCycles,
-      tilDone
-    );
     const newTodo = {
       id: Date.now(),
       task: task,
@@ -101,71 +92,79 @@ const ToDoList = () => {
     setTodos([...todos, newTodo]);
   };
 
-  const moveItem = useCallback(
-    (dragIndex, hoverIndex, isCompleted = false) => {
-      const sourceList = isCompleted ? completedTodos : todos;
-      const draggedItem = sourceList[dragIndex];
-      const newList = [...sourceList];
-      newList.splice(dragIndex, 1);
-      newList.splice(hoverIndex, 0, draggedItem);
-
-      if (isCompleted) {
-        setCompletedTodos(newList);
-      } else {
-        setTodos(newList);
-      }
-    },
-    [todos, completedTodos]
-  );
+  const handleOnDragEnd = (result) => {
+    console.log(result);
+    const draggableId = parseInt(result.draggableId, 10); // This parses the ID back into an integer
+    console.log(draggableId);
+    if (!result.destination) return;
+    const items = Array.from(todos);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setTodos(items);
+  };
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DragDropContext onDragEnd={handleOnDragEnd}>
       <NewTaskForm onSubmit={handleNewTask} />
-      <h3>Incomplete Tasks</h3>
-      {todos.map((todo, index) => (
-        <ToDoItem
-          key={todo.id}
-          handleUpdate={handleUpdate}
-          index={index}
-          id={todo.id}
-          task={todo.task}
-          complete={todo.complete}
-          primaryDuration={todo.primaryDuration}
-          secondaryDuration={todo.secondaryDuration}
-          numCycles={todo.numCycles}
-          moveItem={moveItem}
-          onToggle={() => handleToggle(todo.id)}
-          onDelete={() => handleDelete(todo.id)}
-          tilDone={todo.tilDone}
-          isRunning={todo.isRunning}
-          runningTaskIndex={runningTaskIndex}
-          setRunningTaskIndex={setRunningTaskIndex}
-          isTaskInTodos={isTaskInTodos}
-        />
-      ))}
-      <h3>Completed Tasks</h3>
-      {completedTodos.map((todo, index) => (
-        <ToDoItem
-          key={todo.id}
-          handleUpdate={handleUpdate}
-          index={index}
-          id={todo.id}
-          task={todo.task}
-          complete={todo.complete}
-          primaryDuration={todo.primaryDuration}
-          secondaryDuration={todo.secondaryDuration}
-          numCycles={todo.numCycles}
-          moveItem={moveItem}
-          onToggle={() => handleToggle(todo.id, index)}
-          onDelete={() => handleDelete(todo.id)}
-          tilDone={todo.tilDone}
-          isRunning={false}
-          runningTaskIndex={runningTaskIndex}
-          setRunningTaskIndex={setRunningTaskIndex}
-          isTaskInTodos={isTaskInTodos}
-        />
-      ))}
-    </DndProvider>
+      <h3>Not yet done</h3>
+      <Droppable droppableId="todos">
+        {(provided) => (
+          <div {...provided.droppableProps} ref={provided.innerRef}>
+            {todos.map((todo, index) => (
+              <ToDoItem
+                key={todo.id}
+                handleUpdate={handleUpdate}
+                index={index}
+                id={todo.id}
+                task={todo.task}
+                complete={todo.complete}
+                primaryDuration={todo.primaryDuration}
+                secondaryDuration={todo.secondaryDuration}
+                numCycles={todo.numCycles}
+                onToggle={() => handleToggle(todo.id)}
+                onDelete={() => handleDelete(todo.id)}
+                tilDone={todo.tilDone}
+                isRunning={todo.isRunning}
+                runningTaskIndex={runningTaskIndex}
+                setRunningTaskIndex={setRunningTaskIndex}
+                isTaskInTodos={isTaskInTodos}
+                draggableId={todo.id.toString()}
+              />
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+      <h3>Donzo</h3>
+      <Droppable droppableId="completedTodos">
+        {(provided) => (
+          <div {...provided.droppableProps} ref={provided.innerRef}>
+            {completedTodos.map((todo, index) => (
+              <ToDoItem
+                key={todo.id}
+                handleUpdate={handleUpdate}
+                index={index}
+                id={todo.id}
+                task={todo.task}
+                complete={todo.complete}
+                primaryDuration={todo.primaryDuration}
+                secondaryDuration={todo.secondaryDuration}
+                numCycles={todo.numCycles}
+                onToggle={() => handleToggle(todo.id, index)}
+                onDelete={() => handleDelete(todo.id)}
+                tilDone={todo.tilDone}
+                isRunning={false}
+                runningTaskIndex={runningTaskIndex}
+                setRunningTaskIndex={setRunningTaskIndex}
+                isTaskInTodos={isTaskInTodos}
+                draggableId={todo.id.toString()}
+              />
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   );
 };
 

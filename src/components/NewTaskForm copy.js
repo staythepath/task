@@ -7,11 +7,18 @@ const NewTaskForm = ({ onSubmit }) => {
   const [numCycles, setNumCycles] = useState(1);
   const [tilDone, setTilDone] = useState(false);
   const timeoutId = React.useRef(null);
-  const [indefinite, setIndefinite] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (task.trim()) {
+      console.log(
+        "New task:",
+        task.trim(),
+        primaryDuration * 60,
+        secondaryDuration * 60,
+        numCycles,
+        tilDone
+      );
       onSubmit(
         task.trim(),
         primaryDuration,
@@ -55,7 +62,6 @@ const NewTaskForm = ({ onSubmit }) => {
     window.clearTimeout(timeoutId.current);
   };
 
-  const [cyclesFocused, setCyclesFocused] = useState(false);
   const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
   const [secondaryDurationFocused, setSecondaryDurationFocused] =
     useState(false);
@@ -75,33 +81,19 @@ const NewTaskForm = ({ onSubmit }) => {
         placeholder="Add new task"
       />
 
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label htmlFor="til-done">
-          <input
-            type="checkbox"
-            id="til-done"
-            checked={tilDone}
-            onChange={() => setTilDone(!tilDone)}
-            style={{ marginRight: "4px" }}
-          />
-          Til Done
-        </label>
-
-        <label htmlFor="indefinite">
-          <input
-            type="checkbox"
-            id="indefinite"
-            checked={indefinite}
-            onChange={() => setIndefinite(!indefinite)}
-            style={{ marginRight: "4px" }}
-          />
-          Indefinite
-        </label>
-      </div>
-      <div className="timer-btn-container">
+      <label htmlFor="til-done">
+        <input
+          type="checkbox"
+          id="til-done"
+          checked={tilDone}
+          onChange={() => setTilDone(!tilDone)}
+        />
+        Til Done
+      </label>
+      <div className="cycle-btn-container">
         <button
-          className="timer-change-btn timer-change-btn-plus"
-          disabled={tilDone}
+          type="button"
+          className="cycle-change-btn cycle-change-btn-plus"
           onMouseDown={() =>
             handleMouseDown((prev) => prev + 1, numCycles, setNumCycles)
           }
@@ -110,12 +102,13 @@ const NewTaskForm = ({ onSubmit }) => {
             handleMouseDown((prev) => prev + 1, numCycles, setNumCycles)
           }
           onTouchEnd={handleMouseUp}
+          disabled={tilDone}
         >
           +
         </button>
         <button
-          className="timer-change-btn timer-change-btn-minus"
-          disabled={tilDone}
+          type="button"
+          className="cycle-change-btn cycle-change-btn-minus"
           onMouseDown={() =>
             handleMouseDown(
               (prev) => Math.max(1, prev - 1),
@@ -132,27 +125,18 @@ const NewTaskForm = ({ onSubmit }) => {
             )
           }
           onTouchEnd={handleMouseUp}
+          disabled={tilDone}
         >
           -
         </button>
       </div>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ marginLeft: "3px", marginRight: "0px" }}>Cycles:</div>
+      <div className="cycle-input">
         <input
-          type="text"
-          pattern="\d*"
+          type="number"
+          min="1"
+          className="cycle-input-field"
           value={numCycles}
           onChange={(e) => setNumCycles(parseInt(e.target.value))}
-          className="timer-input"
-          style={{
-            borderColor: cyclesFocused ? "#666" : "transparent",
-            backgroundColor: cyclesFocused ? "#444" : "transparent",
-          }}
-          onFocus={() => setCyclesFocused(true)}
-          onBlur={() => {
-            setCyclesFocused(false);
-            setCyclesFocused(Math.min(setNumCycles, 1));
-          }}
           disabled={tilDone}
         />
       </div>
@@ -189,7 +173,6 @@ const NewTaskForm = ({ onSubmit }) => {
         </button>
       </div>
       <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ marginLeft: "3px", marginRight: "0px" }}>Minutes:</div>
         <input
           type="text"
           pattern="\d*"
@@ -210,13 +193,13 @@ const NewTaskForm = ({ onSubmit }) => {
             borderColor: primaryDurationFocused ? "#666" : "transparent",
             backgroundColor: primaryDurationFocused ? "#444" : "transparent",
           }}
-          onFocus={() => setPrimaryDurationFocused(true)}
           onBlur={() => {
             setPrimaryDurationFocused(false);
             setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
           }}
           disabled={tilDone}
         />
+        <div style={{ marginLeft: "1px" }}>Minutes</div>
       </div>
       <div className="timer-btn-container">
         <button
@@ -252,7 +235,6 @@ const NewTaskForm = ({ onSubmit }) => {
         </button>
       </div>
       <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ marginLeft: "1px", marginRight: "0px" }}>Minutes:</div>
         <input
           type="text"
           pattern="\d*"
@@ -280,14 +262,16 @@ const NewTaskForm = ({ onSubmit }) => {
           }}
           disabled={tilDone}
         />
-        <div style={countdownDisplayStyle}>
-          <input
-            type="text"
-            value={primaryDuration / 60 + ":00"}
-            readOnly
-            style={{ width: "100%", textAlign: "center", marginLeft: ".5rem" }}
-          />
-        </div>
+        <div style={{ marginLeft: "1px" }}>Minutes</div>
+      </div>
+
+      <div style={countdownDisplayStyle}>
+        <input
+          type="text"
+          value={primaryDuration / 60 + ":00"}
+          readOnly
+          style={{ width: "100%", textAlign: "center", marginLeft: ".5rem" }}
+        />
       </div>
 
       <button
