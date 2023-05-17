@@ -12,14 +12,6 @@ const NewTaskForm = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (task.trim()) {
-      console.log(
-        "New task:",
-        task.trim(),
-        primaryDuration * 60,
-        secondaryDuration * 60,
-        numCycles,
-        tilDone
-      );
       onSubmit(
         task.trim(),
         primaryDuration,
