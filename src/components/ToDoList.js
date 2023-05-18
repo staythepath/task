@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 
 import ToDoItem from "./ToDoItem";
@@ -8,6 +8,15 @@ const ToDoList = () => {
   const [todos, setTodos] = useState([]);
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
+
+ useEffect(() => {
+    const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
+    setTodos(storedTodos);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);   
 
   const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);

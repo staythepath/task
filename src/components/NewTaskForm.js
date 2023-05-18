@@ -7,7 +7,7 @@ const NewTaskForm = ({ onSubmit }) => {
   const [numCycles, setNumCycles] = useState(1);
   const [tilDone, setTilDone] = useState(false);
   const timeoutId = React.useRef(null);
-  const [indefinite, setIndefinite] = useState(false);
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -75,33 +75,26 @@ const NewTaskForm = ({ onSubmit }) => {
         placeholder="Add new task"
       />
 
-      <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
         <label htmlFor="til-done">
           <input
+            height="50px"
             type="checkbox"
             id="til-done"
             checked={tilDone}
             onChange={() => setTilDone(!tilDone)}
-            style={{ marginRight: "4px" }}
+            style={{ marginRight: "4px"  }}
           />
           Til Done
         </label>
 
-        <label htmlFor="indefinite">
-          <input
-            type="checkbox"
-            id="indefinite"
-            checked={indefinite}
-            onChange={() => setIndefinite(!indefinite)}
-            style={{ marginRight: "4px" }}
-          />
-          Indefinite
-        </label>
+      
       </div>
       <div className="timer-btn-container">
         <button
           className="timer-change-btn timer-change-btn-plus"
           disabled={tilDone}
+          type="button"
           onMouseDown={() =>
             handleMouseDown((prev) => prev + 1, numCycles, setNumCycles)
           }
@@ -116,6 +109,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <button
           className="timer-change-btn timer-change-btn-minus"
           disabled={tilDone}
+          type="button"
           onMouseDown={() =>
             handleMouseDown(
               (prev) => Math.max(1, prev - 1),
@@ -160,6 +154,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <button
           className="timer-change-btn timer-change-btn-plus"
           disabled={tilDone}
+          type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             handleMouseDown(
@@ -175,6 +170,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <button
           className="timer-change-btn timer-change-btn-minus"
           disabled={tilDone}
+          type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             handleMouseDown(
@@ -222,6 +218,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <button
           className="timer-change-btn timer-change-btn-plus"
           disabled={tilDone}
+          type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             handleMouseDown(
@@ -238,6 +235,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <button
           className="timer-change-btn timer-change-btn-minus"
           disabled={tilDone}
+          type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             handleMouseDown(
@@ -283,7 +281,7 @@ const NewTaskForm = ({ onSubmit }) => {
         <div style={countdownDisplayStyle}>
           <input
             type="text"
-            value={primaryDuration / 60 + ":00"}
+            value={(((primaryDuration + secondaryDuration) * numCycles)) / 60 + ":00"}
             readOnly
             style={{ width: "100%", textAlign: "center", marginLeft: ".5rem" }}
           />
