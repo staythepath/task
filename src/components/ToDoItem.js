@@ -184,11 +184,6 @@ const ToDoItem = ({
     setIsPrimary(true);
   };
 
-  const countdownDisplayStyle = {
-    width: "3rem",
-    textAlign: "center",
-    marginRight: "1rem",
-  };
 
   return (
     <Draggable draggableId={draggableId} index={index}>
@@ -319,11 +314,8 @@ const ToDoItem = ({
                     className={isRunning && primaryDurationFocused ? "isRunning-timer-input" : "number-input"}
                     style={{
                       borderColor: cyclesFocused ? "#666" : "transparent",
-                      backgroundColor: cyclesFocused && !isRunning ? "#444" : "transparent",
-                      backgroundColor: cyclesFocused && isRunning ? "#abf296" : "transparent",
-                      color: isRunning? "#227f08" : "",
-
-
+                      backgroundColor: cyclesFocused ? (isRunning ? "#abf296" : "#444") : "transparent",
+                      color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setCyclesFocused(true)}
                     onBlur={() => {
@@ -412,8 +404,7 @@ const ToDoItem = ({
                     className="timer-input"
                     style={{
                       borderColor: primaryDurationFocused ? "#666" : "transparent",
-                      backgroundColor: primaryDurationFocused && !isRunning ? "#444" : "transparent",
-                      backgroundColor: primaryDurationFocused && isRunning ? "#abf296" : "transparent",
+                      backgroundColor: primaryDurationFocused ? (!isRunning ? "#444" : "#abf296" ) : "transparent",
                       color: isRunning? "#227f08" : "",
 
 
@@ -484,8 +475,7 @@ const ToDoItem = ({
                     className="timer-input"
                     style={{
                       borderColor: secondaryDurationFocused ? "#666" : "transparent",
-                      backgroundColor: secondaryDurationFocused && !isRunning ? "#444" : "transparent",
-                      backgroundColor: secondaryDurationFocused && isRunning ? "#abf296" : "transparent",
+                      backgroundColor: secondaryDurationFocused ? (!isRunning ? "#444" : "#abf296") : "transparent",
                       color: isRunning? "#227f08" : "",
 
 

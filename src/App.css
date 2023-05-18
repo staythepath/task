@@ -14,7 +14,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #d61212;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.isRunning-App-header {
+  background-color: #325e2c;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -55,6 +66,14 @@
 
 body {
   background-color: #333;
+  color: #ccc;
+  font-family: Arial, sans-serif;
+  padding-left: 5rem;
+  padding-right: 5rem;
+}
+
+isRunning-body {
+  background-color: #1db46e;
   color: #ccc;
   font-family: Arial, sans-serif;
   padding-left: 5rem;
