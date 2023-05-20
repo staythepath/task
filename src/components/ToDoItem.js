@@ -35,6 +35,7 @@ const ToDoItem = ({
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
   const timeoutId = useRef(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -42,8 +43,12 @@ const ToDoItem = ({
   }, [initialPrimaryDuration, initialSecondaryDuration]);
 
   useEffect(() => {
-    setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
-  }, [primaryDuration, secondaryDuration, isPrimary]);
+    if (!tilDone || tilDone) {
+      setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
+    } else {
+      setTimeLeft(0);
+    }
+  }, [primaryDuration, secondaryDuration, isPrimary, tilDone]);
 
   useEffect(() => {
     if (index === runningTaskIndex && isTaskInTodos(id)) {
@@ -54,16 +59,31 @@ const ToDoItem = ({
   useEffect(() => {
     let timer;
 
-    const playSound = (times = 3) => {
+    if (isRunning && tilDone) {
+      timer = setInterval(
+        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
+        1000
+      );
+    }
+
+    return () => clearInterval(timer);
+  }, [isRunning, tilDone]);
+
+  useEffect(() => {
+    let timer;
+
+    const playBell = (times = 1) => {
       if (times > 0) {
-        const audio = new Audio("/beep.wav");
+        const audio = new Audio("/boxingbell.wav");
         audio.play();
-        setTimeout(() => playSound(times - 1), 1000);
+        setTimeout(() => playBell(times - 1), 1000);
       }
     };
 
     const handleTaskCompletion = () => {
+      console.log(tilDone);
       setIsRunning(false);
+
       const updatedTask = {
         id,
         index,
@@ -81,41 +101,53 @@ const ToDoItem = ({
       }
     };
 
-    if (isRunning && timeLeft > 0 && !tilDone) {
+    const playApplause = (times = 1) => {
+      if (times > 0) {
+        const audio = new Audio("/applause.mp3");
+        audio.play();
+        setTimeout(() => playApplause(times - 1), 1000);
+      }
+    };
+
+    if (isRunning) {
+      console.log(timeLeft);
       timer = setInterval(
         () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
         1000
       );
-    } else if (!tilDone && timeLeft === 0) {
-      clearInterval(timer);
-      playSound();
-      if (isPrimary) {
-        setIsPrimary(false);
-        setTimeLeft(secondaryDuration);
-        timer = setInterval(
-          () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-          1000
-        );
-      } else {
-        setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-        setIsPrimary(!isPrimary);
-        setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-        if (currentCycle < numCycles - 1) {
+
+      if (
+        timeLeft === 1 ||
+        (isPrimary ? primaryDuration : secondaryDuration) === 0
+      ) {
+        clearInterval(timer);
+        playBell();
+        if (isPrimary) {
+          setIsPrimary(false);
+          setTimeLeft(secondaryDuration);
+          // Check if we're about to start the last cycle with a secondary timer
+          if (currentCycle === numCycles - 1) {
+            playApplause();
+          }
           timer = setInterval(
             () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
             1000
           );
         } else {
-          handleTaskCompletion();
+          setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
+          setIsPrimary(!isPrimary);
+          setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
+          if (currentCycle < numCycles - 1) {
+            timer = setInterval(
+              () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
+              1000
+            );
+          } else if (!tilDone) {
+            handleTaskCompletion();
+          }
         }
       }
-    } else if (tilDone && isRunning) {
-      timer = setInterval(
-        () => setTimeLeft((prevTimeLeft) => prevTimeLeft + 1),
-        1000
-      );
     }
-
     return () => clearInterval(timer);
   }, [
     isRunning,
@@ -140,16 +172,30 @@ const ToDoItem = ({
   };
 
   const updateTask = () => {
-    handleUpdate({
-      id,
-      index,
-      task,
-      complete,
-      primaryDuration,
-      secondaryDuration,
-      numCycles,
-    });
     setIsEditing(false);
+    if (!tilDone) {
+      handleUpdate({
+        id,
+        index,
+        task,
+        complete,
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone,
+      });
+    } else {
+      handleUpdate({
+        id,
+        index,
+        task,
+        complete,
+        primaryDuration,
+        secondaryDuration,
+        numCycles: 999,
+        tilDone,
+      });
+    }
   };
 
   const handleMouseDown = (operation, value, setValue) => {
@@ -175,15 +221,31 @@ const ToDoItem = ({
   };
 
   const toggleTimer = () => {
+    const playBell = (times = 1) => {
+      if (times > 0) {
+        const audio = new Audio("/boxingbell.wav");
+        audio.play();
+        setTimeout(() => playBell(times - 1), 1000);
+      }
+    };
     setIsRunning(!isRunning);
+
+    if (isRunning) {
+      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
+      setRunningTaskIndex(-1);
+    } else if (isTaskInTodos(id)) {
+      playBell();
+      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
+      setRunningTaskIndex(index);
+    }
   };
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTimeLeft(tilDone ? 0 : primaryDuration);
+    setTimeLeft(primaryDuration);
     setIsPrimary(true);
+    setElapsedTime(0);
   };
-
 
   return (
     <Draggable draggableId={draggableId} index={index}>
@@ -192,10 +254,22 @@ const ToDoItem = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={ isRunning ? 'isRunning' : 'getItemStyle'}
-
+          className={
+            isRunning
+              ? isEditing
+                ? "isRunning-isEditingTask"
+                : "isRunning"
+              : isEditing
+              ? " task-isEditingTask"
+              : "task"
+          }
+          //        className={ isRunning ? { isEditing ? 'isRunning-isEditingTask' : "isRunning-task"} : {isEditing ? "editing-task" : "task"}}
         >
-          <label className={ isRunning ? "isRunning-checkbox-container" : "checkbox-container"}>
+          <label
+            className={
+              isRunning ? "isRunning-checkbox-container" : "checkbox-container"
+            }
+          >
             <input
               type="checkbox"
               checked={complete}
@@ -238,13 +312,19 @@ const ToDoItem = ({
                   task: e.target.value,
                 });
               }}
-              style={{ marginLeft: "1rem", marginRight: "1rem",
-              backgroundColor: isRunning ? "#abf296" : "transparent",
-              color: isRunning ? "#227f08" : ""  }}  
-              
+              style={{
+                marginLeft: "1rem",
+                marginRight: "1rem",
+                maxHeight: "1rem",
+                minWidth: "3rem",
+                backgroundColor: isRunning ? "#abf296" : "transparent",
+                color: isRunning ? "#227f08" : "",
+              }}
             />
           ) : (
-            <span style={complete ? crossedOutStyle : {}}>{task}</span>
+            <span style={complete ? crossedOutStyle : { marginRight: "1rem" }}>
+              {task}
+            </span>
           )}
 
           <div
@@ -258,8 +338,11 @@ const ToDoItem = ({
               <>
                 <div className="timer-btn-container">
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn-plus" : "timer-change-btn timer-change-btn-plus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn-plus"
+                        : "timer-change-btn timer-change-btn-plus"
+                    }
                     onMouseDown={() =>
                       handleMouseDown(
                         (prev) => prev + 1,
@@ -280,8 +363,11 @@ const ToDoItem = ({
                     +
                   </button>
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus" : "timer-change-btn timer-change-btn-minus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        : "timer-change-btn timer-change-btn-minus"
+                    }
                     onMouseDown={() =>
                       handleMouseDown(
                         (prev) => Math.max(1, prev - 1),
@@ -311,18 +397,26 @@ const ToDoItem = ({
                     pattern="\d*"
                     value={numCycles}
                     onChange={(e) => setNumCycles(parseInt(e.target.value))}
-                    className={isRunning && primaryDurationFocused ? "isRunning-timer-input" : "number-input"}
+                    className={
+                      isRunning && primaryDurationFocused
+                        ? "isRunning-timer-input"
+                        : "number-input"
+                    }
                     style={{
                       borderColor: cyclesFocused ? "#666" : "transparent",
-                      backgroundColor: cyclesFocused ? (isRunning ? "#abf296" : "#444") : "transparent",
+                      backgroundColor: cyclesFocused
+                        ? isRunning
+                          ? "#abf296"
+                          : "#444"
+                        : "transparent",
                       color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setCyclesFocused(true)}
                     onBlur={() => {
                       setCyclesFocused(false);
-                      setCyclesFocused(Math.min(setNumCycles, 1));
+                      if (!tilDone) setCyclesFocused(Math.min(setNumCycles, 1));
+                      else return;
                     }}
-                    disabled={tilDone}
                   />
                 </div>
                 <input
@@ -352,8 +446,11 @@ const ToDoItem = ({
 
                 <div className="timer-btn-container">
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn-plus" : "timer-change-btn timer-change-btn-plus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn-plus"
+                        : "timer-change-btn timer-change-btn-plus"
+                    }
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleMouseDown(
@@ -367,8 +464,11 @@ const ToDoItem = ({
                     +
                   </button>
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus" : "timer-change-btn timer-change-btn-minus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        : "timer-change-btn timer-change-btn-minus"
+                    }
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleMouseDown(
@@ -403,24 +503,30 @@ const ToDoItem = ({
                     }}
                     className="timer-input"
                     style={{
-                      borderColor: primaryDurationFocused ? "#666" : "transparent",
-                      backgroundColor: primaryDurationFocused ? (!isRunning ? "#444" : "#abf296" ) : "transparent",
-                      color: isRunning? "#227f08" : "",
-
-
+                      borderColor: primaryDurationFocused
+                        ? "#666"
+                        : "transparent",
+                      backgroundColor: primaryDurationFocused
+                        ? !isRunning
+                          ? "#444"
+                          : "#abf296"
+                        : "transparent",
+                      color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setPrimaryDurationFocused(true)}
                     onBlur={() => {
                       setPrimaryDurationFocused(false);
                       setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
                     }}
-                    disabled={tilDone}
                   />
                 </div>
                 <div className="timer-btn-container">
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn-plus" : "timer-change-btn timer-change-btn-plus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn-plus"
+                        : "timer-change-btn timer-change-btn-plus"
+                    }
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleMouseDown(
@@ -435,8 +541,11 @@ const ToDoItem = ({
                   </button>
 
                   <button
-                    className={isRunning ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus" : "timer-change-btn timer-change-btn-minus"}
-                    disabled={tilDone}
+                    className={
+                      isRunning
+                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        : "timer-change-btn timer-change-btn-minus"
+                    }
                     onMouseDown={(e) => {
                       e.preventDefault();
                       handleMouseDown(
@@ -474,11 +583,15 @@ const ToDoItem = ({
                     }}
                     className="timer-input"
                     style={{
-                      borderColor: secondaryDurationFocused ? "#666" : "transparent",
-                      backgroundColor: secondaryDurationFocused ? (!isRunning ? "#444" : "#abf296") : "transparent",
-                      color: isRunning? "#227f08" : "",
-
-
+                      borderColor: secondaryDurationFocused
+                        ? "#666"
+                        : "transparent",
+                      backgroundColor: secondaryDurationFocused
+                        ? !isRunning
+                          ? "#444"
+                          : "#abf296"
+                        : "transparent",
+                      color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setSecondaryDurationFocused(true)}
                     onBlur={() => {
@@ -487,48 +600,91 @@ const ToDoItem = ({
                         Math.min(secondaryDuration, 90 * 60)
                       );
                     }}
-                    disabled={tilDone}
                   />
                 </div>
               </>
             )}
 
-            <div className="countdown" >
-              <input
-                type="text"
-                value={`${Math.floor(timeLeft / 60)}:${String(
-                  timeLeft % 60
-                ).padStart(2, "0")}`}
-                readOnly
-                className= {isRunning ? "isRunningCountdown" : "" }
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginLeft: ".5rem",
-                  
-                }}
-              />
+            <div className="countdown">
+              {!tilDone && (
+                <input
+                  type="text"
+                  value={numCycles - currentCycle}
+                  readOnly
+                  className={isRunning ? "isRunningCountdown" : ""}
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginRight: ".5rem",
+                  }}
+                />
+              )}
             </div>
+            <div className="countdown">
+              {tilDone ? (
+                <input
+                  type="text"
+                  value={`${Math.floor(elapsedTime / 60)}:${String(
+                    elapsedTime % 60
+                  ).padStart(2, "0")}`}
+                  readOnly
+                  className={isRunning ? "isRunningCountdown" : ""}
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginLeft: ".5rem",
+                  }}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={`${Math.floor(timeLeft / 60)}:${String(
+                    timeLeft % 60
+                  ).padStart(2, "0")}`}
+                  readOnly
+                  className={isRunning ? "isRunningCountdown" : ""}
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginLeft: ".5rem",
+                  }}
+                />
+              )}
+            </div>
+
             {!isEditing && (
               <>
                 <button
                   onClick={toggleTimer}
-                  className= {isRunning ? "isRunning-button" : "notRunning-button" }
-      
+                  className={
+                    isRunning ? "isRunning-button" : "notRunning-button"
+                  }
                 >
                   {isRunning ? "Pause" : "Start"}
                 </button>
-                <button onClick={resetTimer} style={{ marginLeft: "1rem" }} className= {isRunning ? "isRunning-button" : "notRunning-button" }>
+                <button
+                  onClick={resetTimer}
+                  style={{ marginLeft: "1rem" }}
+                  className={
+                    isRunning ? "isRunning-button" : "notRunning-button"
+                  }
+                >
                   Reset
                 </button>
-                <button onClick={onDelete} style={{ marginLeft: "1rem" }} className= {isRunning ? "isRunning-button" : "notRunning-button" }>
+                <button
+                  onClick={onDelete}
+                  style={{ marginLeft: "1rem" }}
+                  className={
+                    isRunning ? "isRunning-button" : "notRunning-button"
+                  }
+                >
                   Delete
                 </button>
               </>
             )}
             <button
               onClick={isEditing ? updateTask : toggleEdit}
-              className= {isRunning ? "isRunning-button" : "notRunning-button" }
+              className={isRunning ? "isRunning-button" : "notRunning-button"}
               style={{
                 marginLeft: "1rem",
                 minWidth: "70px",
