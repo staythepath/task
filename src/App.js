@@ -5,7 +5,7 @@ import "./App.css";
 function App() {
   return (
     <div>
-      <h1>Obey the Beeps</h1>
+      <h1>Obey the Bell</h1>
       <ToDoList />
     </div>
   );

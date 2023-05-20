@@ -14,7 +14,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #d61212;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.isRunning-App-header {
+  background-color: #325e2c;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -61,6 +72,14 @@ body {
   padding-right: 5rem;
 }
 
+isRunning-body {
+  background-color: #1db46e;
+  color: #ccc;
+  font-family: Arial, sans-serif;
+  padding-left: 5rem;
+  padding-right: 5rem;
+}
+
 h1 {
   text-align: center;
   margin-bottom: 1.5rem;
@@ -91,6 +110,14 @@ button {
   background-color: #666;
   color: #ccc;
   cursor: pointer;
+}
+
+.ToDoList {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  align-content: space-around;
 }
 
 ul {
@@ -249,25 +276,379 @@ span {
 .timer-change-btn-plus {
   border-bottom: 1px solid #ccc;
   border-radius: 4px 4px 0 0;
+  border: 1px solid #143b0b;
 }
 
 .timer-change-btn-minus {
   border-radius: 0 0 4px 4px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #000000;
 }
 
 .strike-through {
   text-decoration: line-through;
 }
 
-.checkbox-container {
-  display: block;
-  width: 100%;
+.checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #ffffff00;
 }
 
-.getItemStyle {
+.isRunning-checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #ffffff00;
+}
+
+.checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 23px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.isRunning-checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 23px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* On mouse-over, add a grey background color */
+.checkbox-container:hover input ~ .checkbox {
+  background-color: #06be00;
+}
+
+/* When the checkbox is checked, add a blue background */
+.checkbox-container input:checked ~ .checkbox {
+  background-color: #06be00;
+}
+
+/* Create the checkmark/indicator (hidden when not checked) */
+.checkbox:after {
+  content: "";
+  position: absolute;
+  display: none;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.99);
+
+  opacity: 0;
+}
+
+.checkbox-container input:checked ~ .checkbox:after {
+  display: block;
+  color: #ff7272;
+}
+
+/* Style the checkmark/indicator */
+.checkbox-container .checkbox:after {
+  left: 6px;
+  top: -1px;
+  width: 6px;
+  height: 16px;
+  border: solid rgb(235, 93, 93);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+  opacity: 1;
+}
+
+/* Hide the browser's default checkbox */
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.isRunning-checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Create a custom checkbox */
+.checkbox-container .checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #5c5c5c;
+  border-radius: 5px;
+  border: 2px solid #3a3a3a;
+  opacity: 1;
+}
+
+/* Create a custom checkbox */
+.isRunning-checkbox-container .checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #2fc405;
+  border-radius: 5px;
+  border: 2px solid #227f08;
+  opacity: 1;
+}
+
+.isRunning {
+  padding: 0.5rem;
+  min-width: 37rem;
+  margin: 0 0 0.5rem 0;
+  background: #35dd02;
+  color: #227f08;
+  border-radius: 5px;
+  border: 1px solid #000000;
+}
+
+.task {
+  display: flex;
+  min-width: 37rem;
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
   background: #444;
   border-radius: 5px;
   border: 1px solid #666;
+}
+
+.isRunning-isEditingTask {
+  padding: 0.5rem;
+  min-width: 47rem;
+  margin: 0 0 0.5rem 0;
+  background: #35dd02;
+  color: #227f08;
+  border-radius: 5px;
+  border: 1px solid #666;
+  box-sizing: border-box;
+}
+
+.task-isEditingTask {
+  display: flex;
+  min-width: 47rem;
+  padding: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  background: #444;
+  border-radius: 5px;
+  border: 1px solid #666;
+  box-sizing: border-box;
+}
+
+.isRunning-button {
+  background-color: #76f952;
+  color: #227f08;
+  border: 1px solid #2fc405;
+  text-align: center;
+  margin-left: 1rem;
+  width: 5rem;
+}
+
+.notRunning-button {
+  background-color: #686868;
+  color: #c0c0c0;
+  border: 1px solid #000000;
+  text-align: center;
+  margin-left: 1rem;
+  width: 5rem;
+  display: block;
+}
+
+.isRunningCountdown {
+  width: 100%;
+  textalign: center;
+  margin-right: 1rem;
+  color: #227f08 !important;
+  background-color: #76f952 !important;
+  border: 3px #000000 !important;
+  border-radius: 5px !important;
+}
+
+.countdown {
+  width: 40px;
+  textalign: center;
+  margin-right: 1rem;
+  border: 3px #000000 !important;
+}
+
+.editButtons {
+}
+
+/*
+
+className={ isRunning ? 'isRunning' : 'getItemStyle'}
+
+className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
+
+*/
+
+.isRunning-timer-input {
+  width: 1.2rem;
+  padding: 0rem;
+  max-width: 1.1rem;
+  margin: 0 0.1rem;
+  background-color: #abf296;
+  border: none; /* Remove border */
+  color: #227f08;
+  font-size: 1rem;
+  text-align: center;
+  outline: none; /* Remove outline */
+  moz-appearance: textfield;
+}
+
+/*const timerDisplayStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '1.2rem',
+  margin: '0 0.5rem',
+  marginRight: '0.03rem',
+  marginLeft: '.4rem',
+};
+*/
+
+.isRunning-timer-input:focus {
+  border-color: #666; /* Add this line */
+}
+
+.isRunning-cycle-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+  color: #227f08;
+}
+
+.isRunning-cycle-input-field {
+  margin: 0rem;
+  width: 2.2rem;
+  max-width: 2.2rem;
+  height: 2.1rem;
+  max-height: 2.1rem;
+  font-size: 1rem;
+  text-align: center;
+  border-width: 1px;
+  border-color: transparent;
+  background-color: transparent;
+  color: #227f08;
+  -moz-appearance: textfield;
+  padding: 0rem;
+  outline: none;
+  transition: transform 0.2s ease; /* Add this for smooth transition */
+}
+
+.isRunning-cycle-input-field::-webkit-outer-spin-button,
+.isRunning-cycle-input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.isRunning-cycle-input-field:focus {
+  border-color: #666;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  background-color: #444;
+  outline: none;
+}
+
+.isRunning-cycle-btn-container {
+  display: flex;
+  flex-direction: column;
+  margin: 0rem;
+}
+
+.isRunning-cycle-change-btn {
+  padding: 0.25rem 0.5rem;
+  margin-right: 0rem;
+  font-size: 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #666;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.isRunning-cycle-change-btn-plus {
+  border-bottom: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+}
+
+.isRunning-cycle-change-btn-minus {
+  border-radius: 0 0 4px 4px;
+}
+
+.isRunning-timer-btn-container {
+  display: flex;
+  flex-direction: column;
+  margin: 0rem;
+}
+
+.isRunning-timer-change-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #abf296;
+  color: #227f08;
+  cursor: pointer;
+}
+
+.isRunning-timer-change-btn-plus {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  background-color: #abf296;
+  color: #227f08;
+  border-bottom: 1px solid #227f08;
+  border-radius: 4px 4px 0 0 !important;
+  cursor: pointer;
+  border: 1px solid #227f08;
+}
+
+.isRunning-timer-change-btn-minus {
+  border-radius: 0 0 4px 4px !important;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  background-color: #abf296;
+  color: #227f08;
+  border-bottom: 1px solid #227f08;
+  cursor: pointer;
+  border: 1px solid #227f08;
+}
+
+.number-input {
+  width: 1.2rem;
+  padding: 0rem;
+  max-width: 1.1rem;
+  margin: 0 0.1rem;
+  background-color: transparent;
+  border: none; /* Remove border */
+  color: transparent;
+  font-size: 1rem;
+  text-align: center;
+  outline: none; /* Remove outline */
+  moz-appearance: textfield;
 }
