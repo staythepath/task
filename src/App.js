@@ -1,13 +1,22 @@
 import React from "react";
-import ToDoList from "./components/ToDoList";
+import ToDoList from "./pages/ToDoList";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import "./App.css";
 
 function App() {
   return (
-    <div>
-      <h1>Obey the Bell</h1>
-      <ToDoList />
-    </div>
+    <>
+      <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/ToDoList" element={<ToDoList />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
 

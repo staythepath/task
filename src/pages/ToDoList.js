@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 
-import ToDoItem from "./ToDoItem";
-import NewTaskForm from "./NewTaskForm";
+import ToDoItem from "../components/ToDoItem";
+import NewTaskForm from "../components/NewTaskForm";
 
 const ToDoList = () => {
   const [todos, setTodos] = useState([]);
@@ -88,6 +88,7 @@ const ToDoList = () => {
     const newCompletedTodos = completedTodos.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
+    console.log(todos);
     setTodos(newTodos);
     setCompletedTodos(newCompletedTodos);
   };
