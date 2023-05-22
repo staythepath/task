@@ -4,15 +4,14 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import ToDoItem from "../components/ToDoItem";
 import NewTaskForm from "../components/NewTaskForm";
 
-const ToDoList = () => {
-  const [todos, setTodos] = useState([]);
+const ToDoList = ({ todos, setTodos }) => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
   useEffect(() => {
     const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
     setTodos(storedTodos);
-  }, []);
+  }, [setTodos]);
 
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));

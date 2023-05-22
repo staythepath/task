@@ -1,0 +1,6 @@
+.priority-columns-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  background-color: #333;
+}

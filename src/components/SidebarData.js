@@ -2,6 +2,7 @@ import React from "react";
 
 import * as AiIcons from "react-icons/ai";
 import * as IoIcons from "react-icons/io";
+import * as FaIcons from "react-icons/fa";
 
 export const SidebarData = [
   {
@@ -14,6 +15,12 @@ export const SidebarData = [
     title: "To Do List",
     path: "/ToDoList",
     icon: <IoIcons.IoIosPaper />,
+    cName: "nav-text",
+  },
+  {
+    title: "Prioritize",
+    path: "/Prio",
+    icon: <FaIcons.FaSortAlphaDown />,
     cName: "nav-text",
   },
 ];
