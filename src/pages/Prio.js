@@ -15,7 +15,8 @@ function Prio({ todos, setTodos }) {
     columns: {
       "column-1": {
         id: "column-1",
-        title: "If it takes less than 5 minutes leave it here",
+        title: "Tasks",
+        sub: "If it takes less than 5 minutes leave it here",
         taskIds: todos.map((todo, index) => todo.id),
       },
       "column-2": {

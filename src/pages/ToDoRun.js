@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
-import ToDoItem from "../components/ToDoItem";
-import NewTaskForm from "../components/NewTaskForm";
+import ToDoItemRun from "../components/ToDoItemRun";
+
 import { BsVolumeUpFill } from "react-icons/bs";
 
 const StyledSlider = styled(Slider)({
@@ -26,10 +26,11 @@ const StyledSlider = styled(Slider)({
   },
 });
 
-const ToDoList = ({ todos, setTodos }) => {
+const ToDoRun = ({ todos, setTodos }) => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(50);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
@@ -115,24 +116,21 @@ const ToDoList = ({ todos, setTodos }) => {
     setCompletedTodos(newCompletedTodos);
   };
 
-  const handleNewTask = (
-    task,
-    primaryDuration,
-    secondaryDuration,
-    numCycles,
-    tilDone
-  ) => {
-    const newTodo = {
-      id: Date.now(),
-      task: task,
-      complete: false,
-      primaryDuration: primaryDuration,
-      secondaryDuration: secondaryDuration,
-      numCycles: numCycles,
-      tilDone: tilDone,
-      isRunning: false,
-    };
-    setTodos([...todos, newTodo]);
+  const startFirstTask = () => {
+    if (todos.length > 0) {
+      setShowModal(true);
+      console.log("showModal:", showModal); // For debugging
+    }
+  };
+
+  const actuallyStartFirstTask = () => {
+    if (todos.length > 0) {
+      setRunningTaskIndex(0);
+      let updatedTodos = [...todos];
+      updatedTodos[0] = { ...updatedTodos[0], isRunning: true };
+      setTodos(updatedTodos);
+    }
+    setShowModal(false);
   };
 
   const handleOnDragEnd = (result) => {
@@ -168,7 +166,22 @@ const ToDoList = ({ todos, setTodos }) => {
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
       <div className="ToDoList">
-        <NewTaskForm onSubmit={handleNewTask} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <button
+            onClick={startFirstTask}
+            style={{
+              width: "10%",
+              height: "25%",
+            }}
+          >
+            Start
+          </button>
+        </div>
         <div
           style={{
             display: "flex",
@@ -205,7 +218,7 @@ const ToDoList = ({ todos, setTodos }) => {
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef}>
               {todos.map((todo, index) => (
-                <ToDoItem
+                <ToDoItemRun
                   key={todo.id}
                   handleUpdate={handleUpdate}
                   index={index}
@@ -235,7 +248,7 @@ const ToDoList = ({ todos, setTodos }) => {
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef}>
               {completedTodos.map((todo, index) => (
-                <ToDoItem
+                <ToDoItemRun
                   key={todo.id}
                   handleUpdate={handleUpdate}
                   index={index}
@@ -260,8 +273,45 @@ const ToDoList = ({ todos, setTodos }) => {
           )}
         </Droppable>
       </div>
+      {showModal && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 999,
+            }}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: "#4b4a4a",
+              padding: "20px",
+              zIndex: 1000,
+              borderRadius: "10px",
+              textAlign: "center",
+              boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <p>
+              Are you sure you want to start? Once you start this running, you
+              can't edit or rearrange your tasks. I recommend you double check
+              you have everything set and ordered properly first.{" "}
+            </p>
+            <button onClick={actuallyStartFirstTask}>Yes, start</button>
+            <button onClick={() => setShowModal(false)}>No, cancel</button>
+          </div>
+        </>
+      )}
     </DragDropContext>
   );
 };
 
-export default ToDoList;
+export default ToDoRun;

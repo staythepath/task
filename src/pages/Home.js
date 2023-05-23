@@ -4,11 +4,11 @@ function Home({ todos, setTodos }) {
   return (
     <div className="ToDoList">
       <h1>Home</h1>
-      <div style={{ display: "flex", position: "relative" }}>
-        <p style={{ position: "center" }}>
+      <div style={{ position: "relative", textAlign: "center" }}>
+        <h4 style={{ textAlign: "center" }}>
           Here is the home page. And a bunch of text about something Idk what
           I'll put here
-        </p>
+        </h4>
       </div>
     </div>
   );

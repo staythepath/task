@@ -19,6 +19,7 @@ const PriorityColumn = ({ column, tasks }) => {
           }}
         >
           <h3 style={{ textAlign: "center" }}>{column.title}</h3>
+          <h4 style={{ textAlign: "center" }}>{column.sub}</h4>
           {tasks.map((task, index) => (
             <PriorityCard
               draggableId={task.id}

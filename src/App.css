@@ -429,6 +429,8 @@ span {
 .isRunning {
   padding: 0.5rem;
   min-width: 37rem;
+  max-height: 2.5rem;
+  min-height: 2.5rem;
   margin: 0 0 0.5rem 0;
   background: #35dd02;
   color: #227f08;
@@ -439,6 +441,8 @@ span {
 .task {
   display: flex;
   min-width: 37rem;
+  max-height: 2.5rem;
+  min-height: 2.5rem;
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
   background: #444;
@@ -449,6 +453,7 @@ span {
 .isRunning-isEditingTask {
   padding: 0.5rem;
   min-width: 47rem;
+
   margin: 0 0 0.5rem 0;
   background: #35dd02;
   color: #227f08;
@@ -460,6 +465,7 @@ span {
 .task-isEditingTask {
   display: flex;
   min-width: 47rem;
+
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
   background: #444;
@@ -501,6 +507,13 @@ span {
   width: 40px;
   textalign: center;
   margin-right: 1rem;
+  border: 3px #000000 !important;
+}
+
+.countdownRun {
+  width: 40px;
+  textalign: center;
+  margin-right: 1.5rem;
   border: 3px #000000 !important;
 }
 
