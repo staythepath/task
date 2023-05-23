@@ -2,16 +2,16 @@ import React from "react";
 import { Droppable } from "react-beautiful-dnd";
 import PriorityCard from "./PriorityCard";
 
-const PriorityColumn = ({ column, tasks }) => {
+const PriorityColumn = ({ column, tasks, className }) => {
   return (
     <Droppable droppableId={column.id}>
       {(provided) => (
         <div
+          className={className}
           {...provided.droppableProps}
           ref={provided.innerRef}
           style={{
             minWidth: "200px",
-
             border: "1px solid black",
             borderRadius: "4px",
             padding: "10px",
@@ -19,7 +19,7 @@ const PriorityColumn = ({ column, tasks }) => {
           }}
         >
           <h3 style={{ textAlign: "center" }}>{column.title}</h3>
-          <h4 style={{ textAlign: "center" }}>{column.sub}</h4>
+          <p style={{ textAlign: "center" }}>{column.sub}</p>
           {tasks.map((task, index) => (
             <PriorityCard
               draggableId={task.id}

@@ -36,7 +36,7 @@ function Prio({ todos, setTodos }) {
       },
       "column-5": {
         id: "column-5",
-        title: "Other",
+        title: "Meh",
         taskIds: [],
       },
     },
@@ -132,9 +132,32 @@ function Prio({ todos, setTodos }) {
         {columnOrder.map((columnId) => {
           const column = columns[columnId];
           const tasksInColumn = column.taskIds.map((taskId) => tasks[taskId]);
+
+          let className;
+          switch (columnId) {
+            case "column-1":
+              className = "column1";
+              break;
+            case "column-2":
+              className = "column2";
+              break;
+            case "column-3":
+              className = "column3";
+              break;
+            case "column-4":
+              className = "column4";
+              break;
+            case "column-5":
+              className = "column5";
+              break;
+            default:
+              break;
+          }
+
           return (
             <PriorityColumn
               key={columnId}
+              className={className}
               column={column}
               tasks={tasksInColumn}
               todos={todos}
