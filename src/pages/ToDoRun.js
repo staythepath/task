@@ -303,7 +303,7 @@ const ToDoRun = ({ todos, setTodos }) => {
             <p>
               Are you sure you want to start? Once you start this running, you
               can't edit or rearrange your tasks. I recommend you double check
-              you have everything set and ordered properly first.{" "}
+              you have everything set y and ordered properly first.{" "}
             </p>
             <button onClick={actuallyStartFirstTask}>Yes, start</button>
             <button onClick={() => setShowModal(false)}>No, cancel</button>

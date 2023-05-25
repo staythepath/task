@@ -429,8 +429,7 @@ span {
 .isRunning {
   padding: 0.5rem;
   min-width: 37rem;
-  max-height: 2.5rem;
-  min-height: 2.5rem;
+
   margin: 0 0 0.5rem 0;
   background: #35dd02;
   color: #227f08;
@@ -441,8 +440,7 @@ span {
 .task {
   display: flex;
   min-width: 37rem;
-  max-height: 2.5rem;
-  min-height: 2.5rem;
+
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
   background: #444;
