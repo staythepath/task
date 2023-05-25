@@ -17,6 +17,7 @@ const ToDoItem = ({
   setRunningTaskIndex,
   isTaskInTodos,
   draggableId,
+  volume,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -75,6 +76,7 @@ const ToDoItem = ({
     const playBell = (times = 1) => {
       if (times > 0) {
         const audio = new Audio("/boxingbell.wav");
+        audio.volume = volume / 100;
         audio.play();
         setTimeout(() => playBell(times - 1), 1000);
       }
@@ -104,6 +106,7 @@ const ToDoItem = ({
     const playApplause = (times = 1) => {
       if (times > 0) {
         const audio = new Audio("/applause.mp3");
+        audio.volume = volume / 100;
         audio.play();
         setTimeout(() => playApplause(times - 1), 1000);
       }
@@ -165,6 +168,7 @@ const ToDoItem = ({
     task,
     setRunningTaskIndex,
     isTaskInTodos,
+    volume,
   ]);
 
   const toggleEdit = () => {
@@ -224,6 +228,7 @@ const ToDoItem = ({
     const playBell = (times = 1) => {
       if (times > 0) {
         const audio = new Audio("/boxingbell.wav");
+        audio.volume = volume / 100;
         audio.play();
         setTimeout(() => playBell(times - 1), 1000);
       }

@@ -1,0 +1,27 @@
+.priority-columns-container {
+  display: grid;
+  justify-content: space-between;
+  gap: 20px;
+  background-color: #333;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "column1 column2 column3"
+    "column1 column4 column5";
+}
+
+.column1 {
+  grid-area: column1;
+}
+.column2 {
+  grid-area: column2;
+}
+.column3 {
+  grid-area: column3;
+}
+.column4 {
+  grid-area: column4;
+}
+.column5 {
+  grid-area: column5;
+}
