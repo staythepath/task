@@ -30,4 +30,10 @@ export const SidebarData = [
     icon: <BsIcons.BsPlayFill />,
     cName: "nav-text",
   },
+  {
+    title: "Auth",
+    path: "/Auth",
+    icon: <BsIcons.BsPlayFill />,
+    cName: "nav-text",
+  },
 ];

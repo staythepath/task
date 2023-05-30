@@ -225,6 +225,7 @@ const ToDoItem = ({
   };
 
   const toggleTimer = () => {
+  
     const playBell = (times = 1) => {
       if (times > 0) {
         const audio = new Audio("/boxingbell.wav");

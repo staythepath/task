@@ -113,6 +113,7 @@ const ToDoList = ({ todos, setTodos }) => {
     console.log(todos);
     setTodos(newTodos);
     setCompletedTodos(newCompletedTodos);
+
   };
 
   const handleNewTask = (
