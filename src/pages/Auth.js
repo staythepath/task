@@ -67,7 +67,6 @@ function Auth({ todos, setTodos }) {
     try {
       await signOut(auth);
       setJournals([]);
-      setTodos([]);
     } catch (err) {
       console.error(err);
     }

@@ -11,17 +11,6 @@ const NewTaskForm = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (task.trim()) {
-      onSubmit(
-        task.trim(),
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone
-      );
-      setTask("");
-      setPrimaryDuration(25 * 60);
-      setSecondaryDuration(5 * 60);
-      setNumCycles(1);
       if (tilDone) {
         onSubmit(task.trim(), primaryDuration, secondaryDuration, 999, tilDone);
       } else {
@@ -33,6 +22,10 @@ const NewTaskForm = ({ onSubmit }) => {
           tilDone
         );
       }
+      setTask("");
+      setPrimaryDuration(25 * 60);
+      setSecondaryDuration(5 * 60);
+      setNumCycles(1);
     }
   };
 

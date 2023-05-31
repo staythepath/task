@@ -13,6 +13,9 @@ import {
   deleteDoc,
   getDocs,
   query,
+  orderBy,
+  updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 const StyledSlider = styled(Slider)({
@@ -50,41 +53,46 @@ const ToDoList = ({ todos, setTodos }) => {
   }, [todosLoaded, setTodos]); // Depend on todosLoaded
 
   useEffect(() => {
-    // Listen for auth state changes
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is logged in
+        const todosRef = collection(db, `users/${user.uid}/todoLists`);
+
+        // Adding orderBy() to order the todos by 'order' field
+        const todosQuery = query(todosRef, orderBy("order"));
+
+        const unsubscribeFirestore = onSnapshot(todosQuery, (snapshot) => {
+          const userTodos = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setTodos(userTodos);
+        });
+
+        // return cleanup function for Firestore listener
+        return unsubscribeFirestore;
+      } else {
         // User is logged out
         setTodos([]); // clear todos
-      } else {
-        // User is logged in
-        // Fetch the new user's todos
-        const todosRef = collection(db, `users/${user.uid}/todoLists`);
-        const todosSnapshot = await getDocs(query(todosRef));
-        const userTodos = todosSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setTodos(userTodos);
+        // No Firestore cleanup needed as no listener set up
       }
     });
 
-    // Clean up the listener on unmount
-    return () => unsubscribe();
+    // Clean up the auth listener on unmount
+    return () => unsubscribeAuth();
   }, []); // Empty array means this effect runs once on mount and cleanup on unmount
-
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
-
-  useEffect(() => {
-    const storedCompletedTodos =
-      JSON.parse(localStorage.getItem("completedTodos")) || [];
-    setCompletedTodos(storedCompletedTodos);
-  }, []);
 
   useEffect(() => {
     localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
   }, [completedTodos]);
+
+  // This function will be used to update the Firestore document
+  async function updateFirestoreOrder(userId, taskId, newOrder) {
+    const taskRef = doc(db, `users/${userId}/todoLists/${taskId}`);
+    await updateDoc(taskRef, {
+      order: newOrder,
+    });
+  }
 
   const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
@@ -214,10 +222,23 @@ const ToDoList = ({ todos, setTodos }) => {
 
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
+
     const items = Array.from(todos);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update local state immediately
     setTodos(items);
+
+    // Update Firestore in the background
+    items.forEach((todo, index) => {
+      const docRef = doc(
+        db,
+        `users/${auth.currentUser.uid}/todoLists`,
+        todo.id
+      );
+      updateDoc(docRef, { order: index });
+    });
 
     // If the running task is the one we moved, update the runningTaskIndex
     if (runningTaskIndex === result.source.index) {
