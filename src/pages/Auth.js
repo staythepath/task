@@ -30,12 +30,18 @@ function Auth({ todos, setTodos }) {
 
   const journalsRef = collection(db, "journals");
 
+  if (auth.currentUser) {
+    console.log("User is signed in" + auth.currentUser.u);
+  } else {
+    console.log("No user is signed in");
+  }
+
   const register = async () => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       getJournals();
     } catch (err) {
-      console.log.error(err);
+      console.error(err);
     }
   };
 
@@ -44,7 +50,7 @@ function Auth({ todos, setTodos }) {
       await signInWithEmailAndPassword(auth, email, password);
       getJournals();
     } catch (err) {
-      console.log.error(err);
+      console.error(err);
     }
   };
 
@@ -53,7 +59,7 @@ function Auth({ todos, setTodos }) {
       await signInWithPopup(auth, googleProvider);
       getJournals();
     } catch (err) {
-      console.log.error(err);
+      console.error(err);
     }
   };
 
@@ -61,8 +67,9 @@ function Auth({ todos, setTodos }) {
     try {
       await signOut(auth);
       setJournals([]);
+      setTodos([]);
     } catch (err) {
-      console.log.error(err);
+      console.error(err);
     }
   };
 
