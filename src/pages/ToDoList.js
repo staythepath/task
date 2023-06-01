@@ -44,18 +44,14 @@ const ToDoList = ({ todos, setTodos }) => {
   const [volume, setVolume] = useState(50);
   const [todosLoaded, setTodosLoaded] = useState(false);
 
-  useEffect(() => {
-    if (!todosLoaded) {
-      const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
-      setTodos(storedTodos);
-      setTodosLoaded(true); // Mark the todos as loaded
-    }
-  }, [todosLoaded, setTodos]); // Depend on todosLoaded
+  
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         // User is logged in
+        console.log("onAuthStateChanged thinks user is logged in")
+        
         const todosRef = collection(db, `users/${user.uid}/todoLists`);
 
         // Adding orderBy() to order the todos by 'order' field
@@ -68,12 +64,13 @@ const ToDoList = ({ todos, setTodos }) => {
           }));
           setTodos(userTodos);
         });
+        console.log("Here are the todos that were just set: ", todos)
 
         // return cleanup function for Firestore listener
         return unsubscribeFirestore;
       } else {
         // User is logged out
-        setTodos([]); // clear todos
+        console.log("onAuthStateChanged thinks user is logged out!")
         // No Firestore cleanup needed as no listener set up
       }
     });
@@ -82,9 +79,7 @@ const ToDoList = ({ todos, setTodos }) => {
     return () => unsubscribeAuth();
   }, []); // Empty array means this effect runs once on mount and cleanup on unmount
 
-  useEffect(() => {
-    localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
-  }, [completedTodos]);
+
 
   // This function will be used to update the Firestore document
   async function updateFirestoreOrder(userId, taskId, newOrder) {
@@ -205,6 +200,7 @@ const ToDoList = ({ todos, setTodos }) => {
       tilDone: tilDone,
       isRunning: false,
       userId: auth.currentUser.uid,
+      order: todos.length
     };
 
     // Adding the new task to Firestore

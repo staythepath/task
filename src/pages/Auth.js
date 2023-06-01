@@ -31,7 +31,7 @@ function Auth({ todos, setTodos }) {
   const journalsRef = collection(db, "journals");
 
   if (auth.currentUser) {
-    console.log("User is signed in" + auth.currentUser.u);
+    console.log("User is signed in");
   } else {
     console.log("No user is signed in");
   }
