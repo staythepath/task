@@ -41,7 +41,7 @@ function Navbar() {
       <IconContext.Provider value={{ color: "#fff" }}>
         <div className="navbar" >
           <Link to="#" className="menu-bars">
-            <FaIcons.FaBars onClick={showSidebar} />
+            <FaIcons.FaBars onClick={showSidebar} style={{marginLeft:"10px"}} />
           </Link>
           <h2 className="navbar-logo">
             Always continue,<br/> especially when it's hard.
@@ -59,7 +59,9 @@ function Navbar() {
           <ul className="nav-menu-items" onClick={showSidebar}>
             <li className="navbar-toggle">
               <Link to="#" className="menu-bars">
+                <div style={{marginLeft: "10px"}}>
                 <AiIcons.AiOutlineClose />
+                </div>
               </Link>
             </li>
             {SidebarData.map((item, index) => {
