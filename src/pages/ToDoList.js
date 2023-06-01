@@ -11,7 +11,6 @@ import {
   collection,
   doc,
   deleteDoc,
-  getDocs,
   query,
   orderBy,
   updateDoc,
@@ -42,7 +41,7 @@ const ToDoList = ({ todos, setTodos }) => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(50);
-  const [todosLoaded, setTodosLoaded] = useState(false);
+
 
   
 
@@ -64,7 +63,6 @@ const ToDoList = ({ todos, setTodos }) => {
           }));
           setTodos(userTodos);
         });
-        console.log("Here are the todos that were just set: ", todos)
 
         // return cleanup function for Firestore listener
         return unsubscribeFirestore;
@@ -77,17 +75,11 @@ const ToDoList = ({ todos, setTodos }) => {
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, []); // Empty array means this effect runs once on mount and cleanup on unmount
+  }, [setTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
 
 
 
-  // This function will be used to update the Firestore document
-  async function updateFirestoreOrder(userId, taskId, newOrder) {
-    const taskRef = doc(db, `users/${userId}/todoLists/${taskId}`);
-    await updateDoc(taskRef, {
-      order: newOrder,
-    });
-  }
+ 
 
   const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
