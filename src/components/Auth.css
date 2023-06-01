@@ -1,0 +1,41 @@
+.container {
+    border-style: solid;
+    border-radius: 10px;
+    border-color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 33vh;
+    width: 250px;
+  }
+  
+  .input-box {
+    margin: 10px;
+    width: 200px;
+  }
+  
+  .center-div {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  
+  .inline-div {
+    margin-right: 10px;
+    display: inline-block;
+  }
+  
+  .button-spacing {
+    margin-left: 10px;
+  }
+  
+  .full-width-button {
+    width: 200px;
+    margin: 5px;
+  }
+  
+  .logout-button {
+    margin-top: 20px;
+  }
+  

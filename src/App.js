@@ -4,7 +4,8 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Prio from "./pages/Prio";
 import ToDoRun from "./pages/ToDoRun";
-import Auth from "./pages/Auth";
+import Auth from "./components/Auth";
+import Journals from "./pages/Journals";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot } from "firebase/firestore";
@@ -15,6 +16,7 @@ import "./App.css";
 function App() {
   const [todos, setTodos] = useState([]);
   const [isAuth, setIsAuth] = useState(false);
+  
 
   useEffect(() => {
     let unsubscribeAuth = null;
@@ -56,6 +58,7 @@ function App() {
     <>
       <Router>
         <Navbar />
+        <div style={{ marginTop: '0px' }}> 
         <Routes>
           <Route
             path="/"
@@ -64,20 +67,33 @@ function App() {
           <Route
             path="/ToDoList"
             element={
-              isAuth ? <ToDoList todos={todos} setTodos={setTodos} /> : <Auth />
+              isAuth ? <ToDoList todos={todos} setTodos={setTodos} /> : <Home />
             }
           />
           <Route
             path="/Prio"
-            element={<Prio todos={todos} setTodos={setTodos} />}
+            element={
+              isAuth ? <Prio todos={todos} setTodos={setTodos} /> : <Home />
+            }
           />
           <Route
             path="/ToDoRun"
-            element={<ToDoRun todos={todos} setTodos={setTodos} />}
+            element={
+              isAuth ? <ToDoRun todos={todos} setTodos={setTodos} /> : <Home />
+            }
+            
+          />
+          <Route
+            path="/Journals"
+            element={
+              isAuth ? <Journals todos={todos} setTodos={setTodos} /> : <Home />
+            }
           />
           <Route path="/Auth" element={<Auth />} />
         </Routes>
+        </div>
       </Router>
+      <div/>
     </>
   );
 }

@@ -6,6 +6,17 @@ import ToDoItemRun from "../components/ToDoItemRun";
 
 import { BsVolumeUpFill } from "react-icons/bs";
 
+import { auth, db } from "../config/firebase";
+import {
+
+  collection,
+
+  query,
+  orderBy,
+
+  onSnapshot,
+} from "firebase/firestore";
+
 const StyledSlider = styled(Slider)({
   width: 300,
   margin: "0 auto",
@@ -33,9 +44,36 @@ const ToDoRun = ({ todos, setTodos }) => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
-    setTodos(storedTodos);
-  }, [setTodos]);
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is logged in
+        console.log("onAuthStateChanged thinks user is logged in")
+        
+        const todosRef = collection(db, `users/${user.uid}/todoLists`);
+
+        // Adding orderBy() to order the todos by 'order' field
+        const todosQuery = query(todosRef, orderBy("order"));
+
+        const unsubscribeFirestore = onSnapshot(todosQuery, (snapshot) => {
+          const userTodos = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setTodos(userTodos);
+        });
+
+        // return cleanup function for Firestore listener
+        return unsubscribeFirestore;
+      } else {
+        // User is logged out
+        console.log("onAuthStateChanged thinks user is logged out!")
+        // No Firestore cleanup needed as no listener set up
+      }
+    });
+
+    // Clean up the auth listener on unmount
+    return () => unsubscribeAuth();
+  }, [setTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
 
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));

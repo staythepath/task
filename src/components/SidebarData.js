@@ -31,9 +31,9 @@ export const SidebarData = [
     cName: "nav-text",
   },
   {
-    title: "Auth",
-    path: "/Auth",
-    icon: <BsIcons.BsPlayFill />,
+    title: "Journals",
+    path: "/Journals",
+    icon: <FaIcons.FaSortAlphaDown />,
     cName: "nav-text",
   },
 ];
