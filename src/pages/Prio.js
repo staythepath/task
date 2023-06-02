@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import PriorityColumn from "../components/PriorityColumn";
 import "./Prio.css";
+import { collection, updateDoc, doc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
 function Prio({ todos, setTodos }) {
   const [data, setData] = useState({
@@ -44,10 +46,46 @@ function Prio({ todos, setTodos }) {
   });
 
   console.log(data);
-  console.log(todos);
 
-  const onDragEnd = (result) => {
+  let userId = auth.currentUser.uid;
+
+  const todosRef = collection(db, `users/${userId}/todoLists`);
+
+  const [updateFirestore, setUpdateFirestore] = useState(false);
+
+  const updateOrder = (newState) => {
+    let order = 0; // Initialize order counter
+    let newTodos = []; // Initialize newTodos array
+
+    // Iterate over all columns in their order
+    newState.columnOrder.forEach((columnId) => {
+      const column = newState.columns[columnId];
+
+      // Iterate over all tasks in the current column in their order
+      column.taskIds.forEach((taskId) => {
+        // Find the corresponding todo in the original todos array
+        const todo = todos.find((todo) => todo.id === taskId);
+
+        // Create a new todo with the updated order
+        const newTodo = {
+          ...todo,
+          order, // Assign the current order to the task
+        };
+
+        // Push the new todo to the newTodos array
+        newTodos.push(newTodo);
+
+        order++; // Increment the order counter
+      });
+    });
+
+    // Update todos in local state
+    setTodos(newTodos);
+  };
+
+  const onDragEnd = async (result) => {
     const { destination, source } = result;
+    setUpdateFirestore(true);
 
     // dropped outside the list
     if (!destination) {
@@ -77,6 +115,8 @@ function Prio({ todos, setTodos }) {
       };
 
       setData(newState);
+
+      updateOrder(newState); // Update order
       return;
     }
 
@@ -106,22 +146,25 @@ function Prio({ todos, setTodos }) {
 
     setData(newState);
 
-    const newTodos = newState.columnOrder
-      .flatMap((columnId) =>
-        newState.columns[columnId].taskIds.map((taskId) => data.tasks[taskId])
-      )
-      .map((task) => {
-        // Find the complete todo object in the original todos array using the task id
-        const originalTodo = todos.find(
-          (todo) => todo.id.toString() === task.id
-        );
-        return originalTodo;
+    updateOrder(newState);
+
+    // Update todos in local state
+  };
+
+  useEffect(() => {
+    if (updateFirestore) {
+      // Here you'd update Firestore with the current state of todos
+      todos.forEach(async (todo) => {
+        const taskRef = doc(todosRef, todo.id);
+        await updateDoc(taskRef, todo);
       });
 
-    setTodos(newTodos);
-    console.log("Here are the todos:" + todos);
-    localStorage.setItem("todos", JSON.stringify(newTodos));
-  };
+      // Reset the updateFirestore flag
+      setUpdateFirestore(false);
+    }
+  }, [todos, todosRef, updateFirestore]);
+
+  console.log(todos);
 
   const { tasks, columns, columnOrder } = data; // extract tasks and columns from data state
 

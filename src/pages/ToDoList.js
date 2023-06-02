@@ -5,6 +5,17 @@ import { styled } from "@mui/system";
 import ToDoItem from "../components/ToDoItem";
 import NewTaskForm from "../components/NewTaskForm";
 import { BsVolumeUpFill } from "react-icons/bs";
+import { auth, db } from "../config/firebase";
+import {
+  addDoc,
+  collection,
+  doc,
+  deleteDoc,
+  query,
+  orderBy,
+  updateDoc,
+  onSnapshot,
+} from "firebase/firestore";
 
 const StyledSlider = styled(Slider)({
   width: 300,
@@ -32,23 +43,36 @@ const ToDoList = ({ todos, setTodos }) => {
   const [volume, setVolume] = useState(50);
 
   useEffect(() => {
-    const storedTodos = JSON.parse(localStorage.getItem("todos")) || [];
-    setTodos(storedTodos);
-  }, [setTodos]);
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is logged in
+        console.log("onAuthStateChanged thinks user is logged in");
 
-  useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
+        const todosRef = collection(db, `users/${user.uid}/todoLists`);
 
-  useEffect(() => {
-    const storedCompletedTodos =
-      JSON.parse(localStorage.getItem("completedTodos")) || [];
-    setCompletedTodos(storedCompletedTodos);
-  }, []);
+        // Adding orderBy() to order the todos by 'order' field
+        const todosQuery = query(todosRef, orderBy("order"));
 
-  useEffect(() => {
-    localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
-  }, [completedTodos]);
+        const unsubscribeFirestore = onSnapshot(todosQuery, (snapshot) => {
+          const userTodos = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setTodos(userTodos);
+        });
+
+        // return cleanup function for Firestore listener
+        return unsubscribeFirestore;
+      } else {
+        // User is logged out
+        console.log("onAuthStateChanged thinks user is logged out!");
+        // No Firestore cleanup needed as no listener set up
+      }
+    });
+
+    // Clean up the auth listener on unmount
+    return () => unsubscribeAuth();
+  }, [setTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
 
   const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
@@ -76,8 +100,10 @@ const ToDoList = ({ todos, setTodos }) => {
       );
       const updatedTask = {
         ...completedTodos[completedTaskIndex],
-        complete: false, // Here we set the complete property to false, indicating the task is now incomplete
+        complete: false,
+        isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
+      setRunningTaskIndex(-1);
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
       setCompletedTodos(newCompletedTodos);
@@ -94,25 +120,73 @@ const ToDoList = ({ todos, setTodos }) => {
     }
   };
 
+  const deleteTask = async (userId, taskId) => {
+    const taskRef = doc(db, `users/${userId}/todoLists/${taskId}`);
+    setRunningTaskIndex(-1);
+    try {
+      await deleteDoc(taskRef);
+      console.log(`Task with id ${taskId} deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting document: ", error);
+    }
+  };
+
   const handleDelete = (id) => {
-    const newTodos = todos.filter((todo) => todo.id !== id);
-    setTodos(newTodos);
+    // Deleting the task from Firestore
+    deleteTask(auth.currentUser.uid, id)
+      .then(() => {
+        const newTodos = todos.filter((todo) => todo.id !== id);
+        setTodos(newTodos);
+        console.log("Task deleted from Firestore and from state: ", id);
+      })
+      .catch((error) => {
+        console.error("Error deleting task: ", error);
+      });
   };
 
   const isTaskInTodos = (taskId) => {
     return todos.some((todo) => todo.id === taskId);
   };
 
-  const handleUpdate = (updatedTask) => {
+  const handleUpdate = async (userId, updatedTask) => {
     const newTodos = todos.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
-    const newCompletedTodos = completedTodos.map((todo) =>
-      todo.id === updatedTask.id ? updatedTask : todo
-    );
-    console.log(todos);
     setTodos(newTodos);
+
+    const newCompletedTodos = completedTodos.map((completedTodo) =>
+      completedTodo.id === updatedTask.id ? updatedTask : completedTodo
+    );
     setCompletedTodos(newCompletedTodos);
+
+    const taskRef = doc(db, `users/${userId}/todoLists/${updatedTask.id}`);
+    try {
+      // Only update the fields that exist in Firestore
+      await updateDoc(taskRef, {
+        task: updatedTask.task,
+        complete: updatedTask.complete,
+        primaryDuration: updatedTask.primaryDuration,
+        secondaryDuration: updatedTask.secondaryDuration,
+        numCycles: updatedTask.numCycles,
+        tilDone: updatedTask.tilDone,
+        isRunning: updatedTask.isRunning,
+        order: updatedTask.order,
+      });
+      console.log("Document updated successfully in Firestore");
+    } catch (e) {
+      console.error("Error updating document in Firestore: ", e);
+    }
+  };
+
+  const addTask = async (userId, task) => {
+    const todosRef = collection(db, `users/${userId}/todoLists`);
+    try {
+      const docRef = await addDoc(todosRef, task);
+      console.log("Document written with ID: ", docRef.id);
+      return docRef; // Return the docRef so it can be used in handleNewTask
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
   };
 
   const handleNewTask = (
@@ -123,7 +197,6 @@ const ToDoList = ({ todos, setTodos }) => {
     tilDone
   ) => {
     const newTodo = {
-      id: Date.now(),
       task: task,
       complete: false,
       primaryDuration: primaryDuration,
@@ -131,16 +204,48 @@ const ToDoList = ({ todos, setTodos }) => {
       numCycles: numCycles,
       tilDone: tilDone,
       isRunning: false,
+      userId: auth.currentUser.uid,
+      order: todos.length,
     };
-    setTodos([...todos, newTodo]);
+
+    // Adding the new task to Firestore
+    addTask(auth.currentUser.uid, newTodo)
+      .then((docRef) => {
+        // Update newTodo id with Firestore document id
+        newTodo.id = docRef.id;
+        setTodos([...todos, newTodo]);
+        console.log("New task added to Firestore and to state: ", newTodo);
+      })
+      .catch((error) => {
+        console.error("Error adding task: ", error);
+      });
   };
 
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
+    if (
+      result.source.droppableId === "completedTodos" &&
+      result.destination.droppableId === "todos"
+    ) {
+      return;
+    }
+
     const items = Array.from(todos);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update local state immediately
     setTodos(items);
+
+    // Update Firestore in the background
+    items.forEach((todo, index) => {
+      const docRef = doc(
+        db,
+        `users/${auth.currentUser.uid}/todoLists`,
+        todo.id
+      );
+      updateDoc(docRef, { order: index });
+    });
 
     // If the running task is the one we moved, update the runningTaskIndex
     if (runningTaskIndex === result.source.index) {
@@ -224,6 +329,7 @@ const ToDoList = ({ todos, setTodos }) => {
                   isTaskInTodos={isTaskInTodos}
                   draggableId={todo.id.toString()}
                   volume={volume}
+                  order={todo.order}
                 />
               ))}
               {provided.placeholder}

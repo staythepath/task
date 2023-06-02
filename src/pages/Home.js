@@ -6,8 +6,8 @@ function Home({ todos, setTodos }) {
       <h1>Home</h1>
       <div style={{ position: "relative", textAlign: "center" }}>
         <h4 style={{ textAlign: "center" }}>
-          Here is the home page. And a bunch of text about something Idk what
-          I'll put here
+          I'll put something better here later, but right now I'm just letting
+          you know, you have to log in to use any of this.
         </h4>
       </div>
     </div>

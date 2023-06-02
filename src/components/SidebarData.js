@@ -30,4 +30,10 @@ export const SidebarData = [
     icon: <BsIcons.BsPlayFill />,
     cName: "nav-text",
   },
+  {
+    title: "Journals",
+    path: "/Journals",
+    icon: <BsIcons.BsFillJournalBookmarkFill />,
+    cName: "nav-text",
+  },
 ];

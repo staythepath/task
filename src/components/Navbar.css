@@ -2,9 +2,13 @@
   background-color: #333;
   height: 80px;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;  /* Change from flex-start to space-between */
   align-items: center;
-  position: relative;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 100;
 }
 
 .navbar-logo {
@@ -79,4 +83,45 @@
 
 span {
   margin-left: 16px;
+}
+
+.auth-modal {
+  display: flex;
+  position: fixed;
+  width: 250px;
+  top: 1%;
+  background: #333;
+  z-index: 1000;
+  right: -100%; 
+  transition: 850ms;
+}
+
+
+.auth-modal.show {
+  right: 10px;
+  transition: 350ms;
+}
+
+.nav-menu {
+  background-color: #4b4a4a;
+  width: 250px;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: -100%;
+  transition: 850ms;
+  z-index: 1000;
+}
+
+.nav-menu.active {
+  left: 0;
+  transition: 350ms;
+}
+
+
+
+.auth-button {
+  Margin-right: 2rem; /* when shown, slide in to 10px from the right */
 }

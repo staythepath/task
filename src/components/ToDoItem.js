@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Draggable } from "react-beautiful-dnd";
+import { auth } from "../config/firebase";
 
 const ToDoItem = ({
   id,
@@ -18,6 +19,7 @@ const ToDoItem = ({
   isTaskInTodos,
   draggableId,
   volume,
+  order,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -37,6 +39,7 @@ const ToDoItem = ({
   const [numCycles, setNumCycles] = useState(initialNumCycles);
   const timeoutId = useRef(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const userId = auth.currentUser.uid;
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -96,11 +99,9 @@ const ToDoItem = ({
         tilDone,
         isRunning: false,
       };
-      handleUpdate(updatedTask);
+      handleUpdate(userId, updatedTask);
       onToggle(id, true);
-      if (isTaskInTodos(id)) {
-        setRunningTaskIndex(index);
-      }
+      //
     };
 
     const playApplause = (times = 1) => {
@@ -169,6 +170,7 @@ const ToDoItem = ({
     setRunningTaskIndex,
     isTaskInTodos,
     volume,
+    userId,
   ]);
 
   const toggleEdit = () => {
@@ -178,7 +180,7 @@ const ToDoItem = ({
   const updateTask = () => {
     setIsEditing(false);
     if (!tilDone) {
-      handleUpdate({
+      console.log({
         id,
         index,
         task,
@@ -187,9 +189,23 @@ const ToDoItem = ({
         secondaryDuration,
         numCycles,
         tilDone,
+        isRunning,
+        order,
+      });
+      handleUpdate(userId, {
+        id,
+        index,
+        task,
+        complete,
+        primaryDuration,
+        secondaryDuration,
+        numCycles,
+        tilDone,
+        isRunning,
+        order,
       });
     } else {
-      handleUpdate({
+      console.log({
         id,
         index,
         task,
@@ -198,6 +214,20 @@ const ToDoItem = ({
         secondaryDuration,
         numCycles: 999,
         tilDone,
+        order,
+        isRunning,
+      });
+      handleUpdate(userId, {
+        id,
+        index,
+        task,
+        complete,
+        primaryDuration,
+        secondaryDuration,
+        numCycles: 999,
+        tilDone,
+        isRunning,
+        order,
       });
     }
   };
@@ -290,7 +320,7 @@ const ToDoItem = ({
                   tilDone,
                   isRunning: false,
                 };
-                handleUpdate(updatedTask);
+                handleUpdate(userId, updatedTask);
                 onToggle(id, !complete);
               }}
             />
@@ -302,7 +332,7 @@ const ToDoItem = ({
               type="text"
               value={task}
               onChange={(e) => {
-                handleUpdate({
+                handleUpdate(userId, {
                   ...{
                     id,
                     index,

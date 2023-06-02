@@ -185,10 +185,10 @@ const ToDoItemRun = ({
       <li className={isRunning ? "isRunning" : "task"}>
         <label
           className={
-            isRunning ? "isRunning-checkbox-container" : "checkbox-container"
+            isRunning  ? "isRunning-checkbox-container" : "checkbox-container"
           }
         >
-          {isRunning ? (
+          {isRunning && tilDone ? (
             <input
               type="checkbox"
               checked={complete}
@@ -209,7 +209,12 @@ const ToDoItemRun = ({
               }}
             />
           ) : (
-            <input type="checkbox" checked={complete} />
+            <input type="checkbox" checked={complete} onChange={() => {
+                const updatedTask = {
+                  isRunning: false,
+                };
+                handleUpdate(updatedTask);
+              }}/>
           )}
           <span className="checkbox"></span>
         </label>
