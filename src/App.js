@@ -6,6 +6,7 @@ import Prio from "./pages/Prio";
 import ToDoRun from "./pages/ToDoRun";
 import Auth from "./components/Auth";
 import Journals from "./pages/Journals";
+import Register from "./pages/Register";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot } from "firebase/firestore";
@@ -16,7 +17,6 @@ import "./App.css";
 function App() {
   const [todos, setTodos] = useState([]);
   const [isAuth, setIsAuth] = useState(false);
-  
 
   useEffect(() => {
     let unsubscribeAuth = null;
@@ -58,42 +58,54 @@ function App() {
     <>
       <Router>
         <Navbar />
-        <div style={{ marginTop: '0px' }}> 
-        <Routes>
-          <Route
-            path="/"
-            element={<Home todos={todos} setTodos={setTodos} />}
-          />
-          <Route
-            path="/ToDoList"
-            element={
-              isAuth ? <ToDoList todos={todos} setTodos={setTodos} /> : <Home />
-            }
-          />
-          <Route
-            path="/Prio"
-            element={
-              isAuth ? <Prio todos={todos} setTodos={setTodos} /> : <Home />
-            }
-          />
-          <Route
-            path="/ToDoRun"
-            element={
-              isAuth ? <ToDoRun todos={todos} setTodos={setTodos} /> : <Home />
-            }
-            
-          />
-          <Route
-            path="/Journals"
-            element={
-              isAuth ? <Journals todos={todos} setTodos={setTodos} /> : <Home />
-            }
-          />
-          <Route path="/Auth" element={<Auth />} />
-        </Routes>
+        <div style={{ marginTop: "0px" }}>
+          <Routes>
+            <Route
+              path="/"
+              element={<Home todos={todos} setTodos={setTodos} />}
+            />
+            <Route
+              path="/ToDoList"
+              element={
+                isAuth ? (
+                  <ToDoList todos={todos} setTodos={setTodos} />
+                ) : (
+                  <Home />
+                )
+              }
+            />
+            <Route
+              path="/Prio"
+              element={
+                isAuth ? <Prio todos={todos} setTodos={setTodos} /> : <Home />
+              }
+            />
+            <Route
+              path="/ToDoRun"
+              element={
+                isAuth ? (
+                  <ToDoRun todos={todos} setTodos={setTodos} />
+                ) : (
+                  <Home />
+                )
+              }
+            />
+            <Route
+              path="/Journals"
+              element={
+                isAuth ? (
+                  <Journals todos={todos} setTodos={setTodos} />
+                ) : (
+                  <Home />
+                )
+              }
+            />
+            <Route path="/Register" element={<Register />} />
+            <Route path="/Auth" element={<Auth />} />
+          </Routes>
         </div>
       </Router>
-      <div/>
+      <div />
     </>
   );
 }

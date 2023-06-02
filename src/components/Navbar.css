@@ -86,16 +86,41 @@ span {
 }
 
 .auth-modal {
+  display: flex;
   position: fixed;
+  width: 250px;
   top: 1%;
   background: #333;
-  background: .5;
+  z-index: 1000;
+  right: -100%; 
+  transition: 850ms;
+}
+
+
+.auth-modal.show {
+  right: 10px;
+  transition: 350ms;
+}
+
+.nav-menu {
+  background-color: #4b4a4a;
+  width: 250px;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: -100%;
+  transition: 850ms;
   z-index: 1000;
 }
 
-.auth-modal.show {
-  right: 10px; /* when shown, slide in to 10px from the right */
+.nav-menu.active {
+  left: 0;
+  transition: 350ms;
 }
+
+
 
 .auth-button {
   Margin-right: 2rem; /* when shown, slide in to 10px from the right */

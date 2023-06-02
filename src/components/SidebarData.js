@@ -33,7 +33,7 @@ export const SidebarData = [
   {
     title: "Journals",
     path: "/Journals",
-    icon: <FaIcons.FaSortAlphaDown />,
+    icon: <BsIcons.BsFillJournalBookmarkFill />,
     cName: "nav-text",
   },
 ];

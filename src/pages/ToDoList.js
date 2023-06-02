@@ -42,15 +42,12 @@ const ToDoList = ({ todos, setTodos }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(50);
 
-
-  
-
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         // User is logged in
-        console.log("onAuthStateChanged thinks user is logged in")
-        
+        console.log("onAuthStateChanged thinks user is logged in");
+
         const todosRef = collection(db, `users/${user.uid}/todoLists`);
 
         // Adding orderBy() to order the todos by 'order' field
@@ -68,7 +65,7 @@ const ToDoList = ({ todos, setTodos }) => {
         return unsubscribeFirestore;
       } else {
         // User is logged out
-        console.log("onAuthStateChanged thinks user is logged out!")
+        console.log("onAuthStateChanged thinks user is logged out!");
         // No Firestore cleanup needed as no listener set up
       }
     });
@@ -76,10 +73,6 @@ const ToDoList = ({ todos, setTodos }) => {
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
   }, [setTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
-
-
-
- 
 
   const handleToggle = (id, completed) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
@@ -98,6 +91,7 @@ const ToDoList = ({ todos, setTodos }) => {
           isRunning: false,
         };
         setCompletedTodos([...completedTodos, completedTask]);
+        setRunningTaskIndex(-1);
       } else {
         setTodos([...newTodos, updatedTask]);
       }
@@ -107,7 +101,8 @@ const ToDoList = ({ todos, setTodos }) => {
       );
       const updatedTask = {
         ...completedTodos[completedTaskIndex],
-        complete: false, // Here we set the complete property to false, indicating the task is now incomplete
+        complete: false,
+        isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
@@ -127,7 +122,7 @@ const ToDoList = ({ todos, setTodos }) => {
 
   const deleteTask = async (userId, taskId) => {
     const taskRef = doc(db, `users/${userId}/todoLists/${taskId}`);
-
+    setRunningTaskIndex(-1);
     try {
       await deleteDoc(taskRef);
       console.log(`Task with id ${taskId} deleted successfully.`);
@@ -192,7 +187,7 @@ const ToDoList = ({ todos, setTodos }) => {
       tilDone: tilDone,
       isRunning: false,
       userId: auth.currentUser.uid,
-      order: todos.length
+      order: todos.length,
     };
 
     // Adding the new task to Firestore
@@ -210,6 +205,12 @@ const ToDoList = ({ todos, setTodos }) => {
 
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
+    if (
+      result.source.droppableId === "completedTodos" &&
+      result.destination.droppableId === "todos"
+    ) {
+      return;
+    }
 
     const items = Array.from(todos);
     const [reorderedItem] = items.splice(result.source.index, 1);
