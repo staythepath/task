@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as FaIcons from "react-icons/fa";
 import * as AiIcons from "react-icons/ai";
 import { Link } from "react-router-dom";
@@ -6,11 +6,44 @@ import { SidebarData } from "./SidebarData";
 import "./Navbar.css";
 import { IconContext } from "react-icons";
 import Auth from "./Auth";
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from "../config/firebase";
+
+
+
  
 
 function Navbar() {
+  const [user, setUser] = useState(null);
+  const [username, setUsername] = useState("");
   const [sidebar, setSidebar] = useState(false);
-  const [showAuth, setShowAuth] = useState(false); 
+  const [showAuth, setShowAuth] = useState(false);
+  const sidebarRef = useRef(null); // initialize sidebar ref
+  const authRef = useRef(null); // initialize auth modal ref 
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (user) {
+        const docRef = doc(db, 'users', user.uid);
+        getDoc(docRef).then((docSnapshot) => {
+          if (docSnapshot.exists()) {
+            setUsername(docSnapshot.data().userInfo.name);
+          } else {
+            console.log("No such document!");
+          }
+        }).catch((error) => {
+          console.log("Error getting document:", error);
+        });
+      } else {
+        setUsername("");
+      }
+    });
+  
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const showSidebar = () => setSidebar(!sidebar);
   const handleShowAuth = (e) => {
@@ -18,18 +51,35 @@ function Navbar() {
     setShowAuth(true);
   };
 
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        // Sign-out successful.
+        console.log("User signed out");
+      })
+      .catch((error) => {
+        // An error occurred.
+        console.error("Error signing out: ", error);
+      });
+  };
+
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (showAuth) {
-        handleCloseAuth(e);
+      if (sidebar && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setSidebar(false); // close sidebar if click was outside sidebar
+      }
+
+      if (showAuth && authRef.current && !authRef.current.contains(e.target)) {
+        setShowAuth(false); // close auth modal if click was outside auth modal
       }
     }
 
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
     return () => {
-      document.removeEventListener('click', handleOutsideClick);
+      document.removeEventListener('mousedown', handleOutsideClick);
     }
-  }, [showAuth]);
+  }, [sidebar, showAuth]); // added sidebar in the array of dependencies
+
 
   const handleCloseAuth = (e) => {
     e.stopPropagation();
@@ -44,18 +94,24 @@ function Navbar() {
             <FaIcons.FaBars onClick={showSidebar} style={{marginLeft:"10px"}} />
           </Link>
           <h2 className="navbar-logo">
-            Always continue,<br/> especially when it's hard.
+            Obey the Bell
           </h2>
-          <button onClick={handleShowAuth} className="auth-button">Sign In</button>
-          {showAuth && (
-            <div onClick={e => e.stopPropagation()} className={showAuth ? "auth-modal show" : "auth-modal"}>
-
-              <Auth />
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h4 style={{marginRight: "10px"}}>{username}</h4>
+              <button onClick={handleLogout} className="auth-button">Sign Out</button>
             </div>
+          ) : (
+            <button onClick={handleShowAuth} className="auth-button">Sign In</button>
           )}
+          {showAuth && (
+        <div ref={authRef} onClick={e => e.stopPropagation()} className={showAuth ? "auth-modal show" : "auth-modal"}>
+          <Auth />
+        </div>
+      )}
 
         </div>
-        <nav className={sidebar ? "nav-menu active" : "nav-menu"}>
+        <nav ref={sidebarRef} className={sidebar ? "nav-menu active" : "nav-menu"}>
           <ul className="nav-menu-items" onClick={showSidebar}>
             <li className="navbar-toggle">
               <Link to="#" className="menu-bars">

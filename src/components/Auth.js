@@ -158,34 +158,34 @@ const signInWithTwitter = async () => {
   }, []);
 
   return (
-    <div style={{  borderStyle: "solid", borderRadius: "10px", borderColor: "#666", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "33vh", width: "250px"}}>
+    <div className="container">
       <h1>Sign In</h1>
       <input
-        style={{ margin: "10px", width: "200px" }}
+        className="input-box"
         placeholder="Email..."
         onChange={(e) => setEmail(e.target.value)}
       />
       <input
-        style={{ margin: "10px", width: "200px" }}
+        className="input-box-bottom"
         placeholder="Password..."
         type="password"
         onChange={(e) => setPassword(e.target.value)}
       />
-      <div style={{ width: "100%", textAlign: "center", marginBottom: "5px" }}>
-        <div style={{ marginRight: "10px", display: "inline-block" }}>
+      <div className="center-div">
+        <div className="inline-div">
             <button onClick={signIn}>Sign In</button>
-            <button style={{ marginLeft: "10px" }} onClick={register}>Register</button>
+            <button className="button-spacing" onClick={register}>Register</button>
         </div>
       </div>
-      <button style={{ width: "200px", margin:"5px" }} onClick={signInWithGoogle}>Sign In With Google</button>
-      <button style={{ width: "200px", margin:"5px" }} onClick={signInWithFacebook}>Sign In With Facebook</button>
-      <button style={{ width: "200px", margin:"5px" }} onClick={signInWithTwitter}>Sign In With Twitter</button>
+      <button className="full-width-button" onClick={signInWithGoogle}>Sign In With Google</button>
+      <button className="full-width-button" onClick={signInWithFacebook}>Sign In With Facebook</button>
+      <button className="full-width-button" onClick={signInWithTwitter}>Sign In With Twitter</button>
   
       {auth.currentUser && (
-        <button onClick={logout} style={{ marginTop: "20px" }}>Log Out</button>
+        <button onClick={logout} className="logout-button">Log Out</button>
       )}
     </div>
-  );
+);
   
 }
 
