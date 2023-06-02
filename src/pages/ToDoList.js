@@ -91,7 +91,6 @@ const ToDoList = ({ todos, setTodos }) => {
           isRunning: false,
         };
         setCompletedTodos([...completedTodos, completedTask]);
-        setRunningTaskIndex(-1);
       } else {
         setTodos([...newTodos, updatedTask]);
       }
@@ -104,6 +103,7 @@ const ToDoList = ({ todos, setTodos }) => {
         complete: false,
         isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
+      setRunningTaskIndex(-1);
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
       setCompletedTodos(newCompletedTodos);
@@ -148,7 +148,7 @@ const ToDoList = ({ todos, setTodos }) => {
     return todos.some((todo) => todo.id === taskId);
   };
 
-  const handleUpdate = (updatedTask) => {
+  const handleUpdate = async (userId, updatedTask) => {
     const newTodos = todos.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
@@ -158,6 +158,24 @@ const ToDoList = ({ todos, setTodos }) => {
       completedTodo.id === updatedTask.id ? updatedTask : completedTodo
     );
     setCompletedTodos(newCompletedTodos);
+
+    const taskRef = doc(db, `users/${userId}/todoLists/${updatedTask.id}`);
+    try {
+      // Only update the fields that exist in Firestore
+      await updateDoc(taskRef, {
+        task: updatedTask.task,
+        complete: updatedTask.complete,
+        primaryDuration: updatedTask.primaryDuration,
+        secondaryDuration: updatedTask.secondaryDuration,
+        numCycles: updatedTask.numCycles,
+        tilDone: updatedTask.tilDone,
+        isRunning: updatedTask.isRunning,
+        order: updatedTask.order,
+      });
+      console.log("Document updated successfully in Firestore");
+    } catch (e) {
+      console.error("Error updating document in Firestore: ", e);
+    }
   };
 
   const addTask = async (userId, task) => {
@@ -311,6 +329,7 @@ const ToDoList = ({ todos, setTodos }) => {
                   isTaskInTodos={isTaskInTodos}
                   draggableId={todo.id.toString()}
                   volume={volume}
+                  order={todo.order}
                 />
               ))}
               {provided.placeholder}

@@ -80,7 +80,11 @@ function Register() {
         placeholder="Email..."
         onChange={(e) => setEmail(e.target.value)}
       />
-      {!emailValid && email !== "" && <p>Email is not valid!</p>}
+      {!emailValid && email !== "" && (
+        <p>
+          Use a fake email if you want, but it needs to be an email address.
+        </p>
+      )}
       <input
         className="register-input"
         placeholder="Password..."
