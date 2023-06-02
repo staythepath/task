@@ -81,10 +81,6 @@ function Navbar() {
   }, [sidebar, showAuth]); // added sidebar in the array of dependencies
 
 
-  const handleCloseAuth = (e) => {
-    e.stopPropagation();
-    setShowAuth(false);
-  };
 
   return (
     <>
