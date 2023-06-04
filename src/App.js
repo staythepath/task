@@ -16,6 +16,7 @@ import "./App.css";
 
 function App() {
   const [todos, setTodos] = useState([]);
+  const [completedTodos, setCompletedTodos] = useState([]);
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
@@ -68,7 +69,12 @@ function App() {
               path="/ToDoList"
               element={
                 isAuth ? (
-                  <ToDoList todos={todos} setTodos={setTodos} />
+                  <ToDoList
+                    todos={todos}
+                    setTodos={setTodos}
+                    completedTodos={completedTodos}
+                    setCompletedTodos={setCompletedTodos}
+                  />
                 ) : (
                   <Home />
                 )
@@ -77,14 +83,28 @@ function App() {
             <Route
               path="/Prio"
               element={
-                isAuth ? <Prio todos={todos} setTodos={setTodos} /> : <Home />
+                isAuth ? (
+                  <Prio
+                    todos={todos}
+                    setTodos={setTodos}
+                    completedTodos={completedTodos}
+                    setCompletedTodos={setCompletedTodos}
+                  />
+                ) : (
+                  <Home />
+                )
               }
             />
             <Route
               path="/ToDoRun"
               element={
                 isAuth ? (
-                  <ToDoRun todos={todos} setTodos={setTodos} />
+                  <ToDoRun
+                    todos={todos}
+                    setTodos={setTodos}
+                    completedTodos={completedTodos}
+                    setCompletedTodos={setCompletedTodos}
+                  />
                 ) : (
                   <Home />
                 )

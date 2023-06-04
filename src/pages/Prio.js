@@ -6,6 +6,7 @@ import { collection, updateDoc, doc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 function Prio({ todos, setTodos }) {
+  const todoListId = "your-todo-list-id";
   const [data, setData] = useState({
     tasks: todos.reduce(
       (acc, todo) => ({
@@ -49,7 +50,10 @@ function Prio({ todos, setTodos }) {
 
   let userId = auth.currentUser.uid;
 
-  const todosRef = collection(db, `users/${userId}/todoLists`);
+  const todosRef = collection(
+    db,
+    `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`
+  );
 
   const [updateFirestore, setUpdateFirestore] = useState(false);
 
