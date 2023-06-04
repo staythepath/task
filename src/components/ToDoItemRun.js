@@ -11,13 +11,11 @@ const ToDoItemRun = ({
   secondaryDuration: initialSecondaryDuration,
   numCycles: initialNumCycles,
   onToggle,
-
   handleUpdate,
   tilDone,
   runningTaskIndex,
   setRunningTaskIndex,
   isTaskInTodos,
-
   volume,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
@@ -29,7 +27,7 @@ const ToDoItemRun = ({
   const [timeLeft, setTimeLeft] = useState(primaryDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isPrimary, setIsPrimary] = useState(true);
-
+  const [previousIndex, setPreviousIndex] = useState(null);
   const [currentCycle, setCurrentCycle] = useState(0);
   const numCycles = initialNumCycles;
 
@@ -174,10 +172,13 @@ const ToDoItemRun = ({
   };
 
   const toggleTimer = () => {
-    setIsRunning(!isRunning);
-
     if (isRunning) {
+      setPreviousIndex(index); // Store the index of the paused task
+      setRunningTaskIndex(-1); // Reset runningTaskIndex as no task is running now
+    } else {
+      setRunningTaskIndex(index); // Set runningTaskIndex to the index of the task being started
     }
+    setIsRunning(!isRunning);
   };
 
   return (
@@ -185,7 +186,7 @@ const ToDoItemRun = ({
       <li className={isRunning ? "isRunning" : "task"}>
         <label
           className={
-            isRunning  ? "isRunning-checkbox-container" : "checkbox-container"
+            isRunning ? "isRunning-checkbox-container" : "checkbox-container"
           }
         >
           {isRunning && tilDone ? (
@@ -209,12 +210,16 @@ const ToDoItemRun = ({
               }}
             />
           ) : (
-            <input type="checkbox" checked={complete} onChange={() => {
+            <input
+              type="checkbox"
+              checked={complete}
+              onChange={() => {
                 const updatedTask = {
                   isRunning: false,
                 };
                 handleUpdate(updatedTask);
-              }}/>
+              }}
+            />
           )}
           <span className="checkbox"></span>
         </label>
@@ -230,7 +235,8 @@ const ToDoItemRun = ({
             justifyContent: "space-around",
           }}
         >
-          {runningTaskIndex === index && !complete ? (
+          {(runningTaskIndex === index || previousIndex === index) &&
+          !complete ? (
             isRunning ? (
               <button
                 onClick={toggleTimer}
@@ -269,6 +275,7 @@ const ToDoItemRun = ({
               <BsPlayFill size={20} /> {/* This could be your pause icon */}
             </button>
           )}
+
           <div className="countdown">
             {!tilDone && (
               <input

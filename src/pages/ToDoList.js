@@ -40,7 +40,7 @@ const StyledSlider = styled(Slider)({
 const ToDoList = ({ todos, setTodos }) => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(20);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -89,6 +89,7 @@ const ToDoList = ({ todos, setTodos }) => {
         const completedTask = {
           ...updatedTask,
           isRunning: false,
+          order: null,
         };
         setCompletedTodos([...completedTodos, completedTask]);
       } else {
@@ -115,6 +116,7 @@ const ToDoList = ({ todos, setTodos }) => {
         numCycles: updatedTask.numCycles,
         tilDone: updatedTask.tilDone,
         isRunning: false,
+        order: null,
       };
       setTodos([...todos, incompleteTask]);
     }

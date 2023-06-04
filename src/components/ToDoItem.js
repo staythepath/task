@@ -689,14 +689,16 @@ const ToDoItem = ({
 
             {!isEditing && (
               <>
-                <button
-                  onClick={toggleTimer}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  {isRunning ? "Pause" : "Start"}
-                </button>
+                {!complete && (
+                  <button
+                    onClick={toggleTimer}
+                    className={
+                      isRunning ? "isRunning-button" : "notRunning-button"
+                    }
+                  >
+                    {isRunning ? "Pause" : "Start"}
+                  </button>
+                )}
                 <button
                   onClick={resetTimer}
                   style={{ marginLeft: "1rem" }}
@@ -717,6 +719,7 @@ const ToDoItem = ({
                 </button>
               </>
             )}
+
             <button
               onClick={isEditing ? updateTask : toggleEdit}
               className={isRunning ? "isRunning-button" : "notRunning-button"}

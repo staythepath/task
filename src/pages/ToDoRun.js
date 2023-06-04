@@ -7,15 +7,7 @@ import ToDoItemRun from "../components/ToDoItemRun";
 import { BsVolumeUpFill } from "react-icons/bs";
 
 import { auth, db } from "../config/firebase";
-import {
-
-  collection,
-
-  query,
-  orderBy,
-
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 const StyledSlider = styled(Slider)({
   width: 300,
@@ -40,15 +32,15 @@ const StyledSlider = styled(Slider)({
 const ToDoRun = ({ todos, setTodos }) => {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         // User is logged in
-        console.log("onAuthStateChanged thinks user is logged in")
-        
+        console.log("onAuthStateChanged thinks user is logged in");
+
         const todosRef = collection(db, `users/${user.uid}/todoLists`);
 
         // Adding orderBy() to order the todos by 'order' field
@@ -66,7 +58,7 @@ const ToDoRun = ({ todos, setTodos }) => {
         return unsubscribeFirestore;
       } else {
         // User is logged out
-        console.log("onAuthStateChanged thinks user is logged out!")
+        console.log("onAuthStateChanged thinks user is logged out!");
         // No Firestore cleanup needed as no listener set up
       }
     });
