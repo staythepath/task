@@ -99,6 +99,10 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
     const taskIndex = todos.findIndex((task) => task.id === id);
 
     let movedTask;
+    ////
+    let newTodos = [...todos];
+    newTodos.splice(taskIndex, 1);
+    newTodos = newTodos.map((task, index) => ({ ...task, order: index })); // reset the order of remaining tasks
 
     if (taskIndex !== -1) {
       const updatedTask = {
@@ -106,9 +110,6 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
         complete:
           completed !== undefined ? completed : !todos[taskIndex].complete,
       };
-      const newTodos = [...todos];
-      newTodos.splice(taskIndex, 1);
-      setTodos(newTodos);
 
       if (updatedTask.complete) {
         const completedTask = {
@@ -117,6 +118,7 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
           order: null,
         };
         setCompletedTodos([...completedTodos, completedTask]);
+        setTodos(newTodos);
 
         // Update Firestore
         movedTask = completedTask;
@@ -134,6 +136,7 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
           movedTask
         );
       } else {
+        updatedTask.order = newTodos.length;
         setTodos([...newTodos, updatedTask]);
 
         // Update Firestore
@@ -174,7 +177,7 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
         numCycles: updatedTask.numCycles,
         tilDone: updatedTask.tilDone,
         isRunning: false,
-        order: null,
+        order: todos.length, // Here we set the order to the end of the list
       };
       setTodos([...todos, incompleteTask]);
 
@@ -194,12 +197,27 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
         movedTask
       );
     }
+
+    // Update Firestore for the remaining todos' orders
+    for (let i = 0; i < newTodos.length; i++) {
+      const updatedTodo = newTodos[i];
+      await updateDoc(
+        doc(
+          db,
+          `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${updatedTodo.id}`
+        ),
+        { order: updatedTodo.order }
+      );
+    }
   };
 
   // ...other code
 
-  const deleteTask = async (userId, taskId) => {
-    const taskRef = doc(db, `users/${userId}/todoLists/${taskId}`);
+  const deleteTask = async (userId, taskId, id) => {
+    const taskRef = doc(
+      db,
+      `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${taskId}`
+    );
     setRunningTaskIndex(-1);
     try {
       await deleteDoc(taskRef);
@@ -302,6 +320,7 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
       isRunning: false,
       userId: auth.currentUser.uid,
       order: todos.length,
+      column: "column-1",
     };
 
     // Adding the new task to Firestore

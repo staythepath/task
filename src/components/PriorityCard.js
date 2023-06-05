@@ -18,7 +18,7 @@ const PriorityCard = ({ task, index }) => {
             ...provided.draggableProps.style, // this should come last to allow the movement of the element
           }}
         >
-          {task.content}
+          {task.task}
         </div>
       )}
     </Draggable>

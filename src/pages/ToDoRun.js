@@ -10,7 +10,8 @@ import { auth, db } from "../config/firebase";
 import {
   collection,
   doc,
-  updateDoc,
+  getDocs,
+  query,
   setDoc,
   deleteDoc,
 } from "firebase/firestore";
@@ -39,24 +40,46 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
-  const [updateFirestore, setUpdateFirestore] = useState(false);
 
   let userId = auth.currentUser.uid;
-  const todosRef = collection(db, `users/${userId}/todoLists`);
+
+  const todoListId = "your-todo-list-id";
 
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
+    const fetchTodos = async () => {
+      const todosQuery = query(
+        collection(db, `users/${userId}/todoLists/${todoListId}/todos`)
+      );
+      const todosSnapshot = await getDocs(todosQuery);
+      let todosData = todosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-  useEffect(() => {
-    const storedCompletedTodos =
-      JSON.parse(localStorage.getItem("completedTodos")) || [];
-    setCompletedTodos(storedCompletedTodos);
+      // Sort todos by order
+      todosData.sort((a, b) => a.order - b.order);
+
+      setTodos(todosData);
+    };
+
+    fetchTodos();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
-  }, [completedTodos]);
+    const fetchCompletedTodos = async () => {
+      const completedTodosQuery = query(
+        collection(db, `users/${userId}/todoLists/${todoListId}/completedTodos`)
+      );
+      const completedTodosSnapshot = await getDocs(completedTodosQuery);
+      const completedTodosData = completedTodosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCompletedTodos(completedTodosData);
+    };
+
+    fetchCompletedTodos();
+  }, []);
 
   useEffect(() => {
     console.log("we are about to update firestore with", todos);
@@ -167,7 +190,6 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   const handleDelete = (id) => {
     const newTodos = todos.filter((todo) => todo.id !== id);
     setTodos(newTodos);
-    setUpdateFirestore(true);
   };
 
   const isTaskInTodos = (taskId) => {
@@ -184,8 +206,6 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
     console.log(todos);
     setTodos(newTodos);
     setCompletedTodos(newCompletedTodos);
-
-    setUpdateFirestore(true);
   };
 
   const startFirstTask = () => {
