@@ -40,7 +40,14 @@ const StyledSlider = styled(Slider)({
 
 const todoListId = "your-todo-list-id";
 
-const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
+const ToDoList = ({
+  todos,
+  setTodos,
+  completedTodos,
+  setCompletedTodos,
+  isRunning,
+  setIsRunning,
+}) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(20);
 
@@ -446,12 +453,15 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
                   onDelete={() => handleDelete(todo.id)}
                   tilDone={todo.tilDone}
                   isRunning={todo.isRunning}
+                  setIsRunning={setIsRunning}
                   runningTaskIndex={runningTaskIndex}
                   setRunningTaskIndex={setRunningTaskIndex}
                   isTaskInTodos={isTaskInTodos}
                   draggableId={todo.id.toString()}
                   volume={volume}
                   order={todo.order}
+                  todos={todos}
+                  setTodos={setTodos}
                 />
               ))}
               {provided.placeholder}
@@ -477,6 +487,7 @@ const ToDoList = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
                   onDelete={() => handleDelete(todo.id)}
                   tilDone={todo.tilDone}
                   isRunning={false}
+                  setIsRunning={setIsRunning}
                   runningTaskIndex={runningTaskIndex}
                   setRunningTaskIndex={setRunningTaskIndex}
                   isTaskInTodos={isTaskInTodos}

@@ -36,11 +36,18 @@ const StyledSlider = styled(Slider)({
   },
 });
 
-const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
+const ToDoRun = ({
+  todos,
+  setTodos,
+  completedTodos,
+  setCompletedTodos,
+  isRunning,
+  setIsRunning,
+}) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
+
   let userId = auth.currentUser.uid;
 
   const todoListId = "your-todo-list-id";
@@ -84,6 +91,15 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   useEffect(() => {
     console.log("we are about to update firestore with", todos);
   }, [todos]);
+
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
 
   const handleToggle = async (id, completed) => {
     const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
@@ -215,6 +231,7 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   };
 
   const actuallyStartFirstTask = () => {
+    playBell();
     if (todos.length > 0) {
       setRunningTaskIndex(0);
       let updatedTodos = [...todos];
@@ -225,6 +242,7 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   };
 
   const pauseOrResumeTask = () => {
+    playBell();
     console.log("pause or resume task");
     if (todos.length > 0 && runningTaskIndex !== -1) {
       let updatedTodos = [...todos];

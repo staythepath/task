@@ -18,6 +18,7 @@ function App() {
   const [todos, setTodos] = useState([]);
   const [completedTodos, setCompletedTodos] = useState([]);
   const [isAuth, setIsAuth] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
     let unsubscribeAuth = null;
@@ -74,6 +75,8 @@ function App() {
                     setTodos={setTodos}
                     completedTodos={completedTodos}
                     setCompletedTodos={setCompletedTodos}
+                    isRunning={isRunning}
+                    setIsRunning={setIsRunning.bind(this)}
                   />
                 ) : (
                   <Home />
@@ -104,6 +107,8 @@ function App() {
                     setTodos={setTodos}
                     completedTodos={completedTodos}
                     setCompletedTodos={setCompletedTodos}
+                    isRunning={isRunning}
+                    setIsRunning={setIsRunning}
                   />
                 ) : (
                   <Home />

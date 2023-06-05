@@ -50,7 +50,7 @@ const ToDoItemRun = ({
     if (index === runningTaskIndex && isTaskInTodos(id)) {
       setIsRunning(true);
     }
-  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
+  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id, setIsRunning]);
 
   useEffect(() => {
     let timer;
@@ -65,17 +65,17 @@ const ToDoItemRun = ({
     return () => clearInterval(timer);
   }, [isRunning, tilDone]);
 
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
+
   useEffect(() => {
     let timer;
-
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
 
     const handleTaskCompletion = () => {
       console.log(tilDone);
@@ -164,21 +164,12 @@ const ToDoItemRun = ({
     setRunningTaskIndex,
     isTaskInTodos,
     volume,
+    setIsRunning,
   ]);
 
   const crossedOutStyle = {
     textDecoration: "line-through",
     opacity: 0.5,
-  };
-
-  const toggleTimer = () => {
-    if (isRunning) {
-      setPreviousIndex(index); // Store the index of the paused task
-      setRunningTaskIndex(-1); // Reset runningTaskIndex as no task is running now
-    } else {
-      setRunningTaskIndex(index); // Set runningTaskIndex to the index of the task being started
-    }
-    setIsRunning(!isRunning);
   };
 
   return (
