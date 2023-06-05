@@ -3,7 +3,7 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItemRun from "../components/ToDoItemRun";
-
+import { BsPlayFill, BsPauseFill, BsArrowRepeat } from "react-icons/bs";
 import { BsVolumeUpFill } from "react-icons/bs";
 
 import { auth, db } from "../config/firebase";
@@ -40,7 +40,7 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
-
+  const [isRunning, setIsRunning] = useState(false);
   let userId = auth.currentUser.uid;
 
   const todoListId = "your-todo-list-id";
@@ -209,9 +209,8 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
   };
 
   const startFirstTask = () => {
-    if (todos.length > 0) {
+    if (todos.length > 0 && runningTaskIndex === -1) {
       setShowModal(true);
-      console.log("showModal:", showModal); // For debugging
     }
   };
 
@@ -223,6 +222,19 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
       setTodos(updatedTodos);
     }
     setShowModal(false);
+  };
+
+  const pauseOrResumeTask = () => {
+    console.log("pause or resume task");
+    if (todos.length > 0 && runningTaskIndex !== -1) {
+      let updatedTodos = [...todos];
+      let isRunning = updatedTodos[runningTaskIndex].isRunning;
+      updatedTodos[runningTaskIndex] = {
+        ...updatedTodos[runningTaskIndex],
+        isRunning: !isRunning,
+      };
+      setTodos(updatedTodos);
+    }
   };
 
   const handleOnDragEnd = (result) => {
@@ -265,13 +277,19 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
           }}
         >
           <button
-            onClick={startFirstTask}
+            onClick={
+              runningTaskIndex !== -1 ? pauseOrResumeTask : startFirstTask
+            }
             style={{
               width: "10%",
               height: "25%",
             }}
           >
-            Start
+            {runningTaskIndex !== -1
+              ? todos[runningTaskIndex].isRunning
+                ? "Pause"
+                : "Resume"
+              : "Start"}
           </button>
         </div>
         <div
@@ -324,6 +342,7 @@ const ToDoRun = ({ todos, setTodos, completedTodos, setCompletedTodos }) => {
                   onDelete={() => handleDelete(todo.id)}
                   tilDone={todo.tilDone}
                   isRunning={todo.isRunning}
+                  setIsRunning={setIsRunning}
                   runningTaskIndex={runningTaskIndex}
                   setRunningTaskIndex={setRunningTaskIndex}
                   isTaskInTodos={isTaskInTodos}

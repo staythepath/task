@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-import { BsPlayFill, BsPauseFill } from "react-icons/bs";
-
 const ToDoItemRun = ({
   id,
   index,
@@ -17,6 +15,8 @@ const ToDoItemRun = ({
   setRunningTaskIndex,
   isTaskInTodos,
   volume,
+  isRunning,
+  setIsRunning,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -25,7 +25,7 @@ const ToDoItemRun = ({
     initialSecondaryDuration
   );
   const [timeLeft, setTimeLeft] = useState(primaryDuration);
-  const [isRunning, setIsRunning] = useState(false);
+
   const [isPrimary, setIsPrimary] = useState(true);
   const [previousIndex, setPreviousIndex] = useState(null);
   const [currentCycle, setCurrentCycle] = useState(0);
@@ -235,47 +235,6 @@ const ToDoItemRun = ({
             justifyContent: "space-around",
           }}
         >
-          {(runningTaskIndex === index || previousIndex === index) &&
-          !complete ? (
-            isRunning ? (
-              <button
-                onClick={toggleTimer}
-                style={{
-                  backgroundColor: "transparent",
-                  marginRight: "1px",
-                  maxHeight: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                <BsPauseFill size={25} color={"#227f08"} />{" "}
-                {/* This could be your pause icon */}
-              </button>
-            ) : (
-              <button
-                onClick={toggleTimer}
-                style={{
-                  backgroundColor: "transparent",
-                  marginRight: "1px",
-                  maxHeight: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                <BsPlayFill size={25} /> {/* This could be your play icon */}
-              </button>
-            )
-          ) : (
-            <button
-              style={{
-                backgroundColor: "transparent",
-                color: "transparent",
-                marginRight: "4px",
-                maxHeight: "35px",
-              }}
-            >
-              <BsPlayFill size={20} /> {/* This could be your pause icon */}
-            </button>
-          )}
-
           <div className="countdown">
             {!tilDone && (
               <input
