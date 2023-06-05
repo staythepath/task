@@ -16,6 +16,7 @@ const PriorityColumn = ({ column, tasks, className }) => {
             borderRadius: "4px",
             padding: "10px",
             backgroundColor: "#4b4a4a",
+            minHeight: "250px",
           }}
         >
           <h3 style={{ textAlign: "center" }}>{column.title}</h3>

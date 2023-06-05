@@ -21,9 +21,6 @@ const ToDoItem = ({
   volume,
   order,
   todos,
-  setTodos,
-  isRunning,
-  setIsRunning,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -32,7 +29,7 @@ const ToDoItem = ({
     initialSecondaryDuration
   );
   const [timeLeft, setTimeLeft] = useState(primaryDuration);
-
+  const [isRunning, setIsRunning] = useState(false);
   const [isPrimary, setIsPrimary] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
@@ -74,7 +71,7 @@ const ToDoItem = ({
       );
     }
 
-    return;
+    return () => clearInterval(timer);
   }, [isRunning, tilDone]);
 
   useEffect(() => {
@@ -156,7 +153,7 @@ const ToDoItem = ({
         }
       }
     }
-    return;
+    return () => clearInterval(timer);
   }, [
     isRunning,
     primaryDuration,
@@ -267,25 +264,15 @@ const ToDoItem = ({
         setTimeout(() => playBell(times - 1), 1000);
       }
     };
+    setIsRunning(!isRunning);
 
-    if (isTaskInTodos(id)) {
-      // Clone the todos array
-      let updatedTodos = [...todos];
-
-      // Clone and update the task at the current index
-      updatedTodos[index] = { ...updatedTodos[index], isRunning: !isRunning };
-
-      // Update the todos array
-      setTodos(updatedTodos);
-
-      if (isRunning) {
-        // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
-        setRunningTaskIndex(-1);
-      } else {
-        playBell();
-        // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
-        setRunningTaskIndex(index);
-      }
+    if (isRunning) {
+      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
+      setRunningTaskIndex(-1);
+    } else if (isTaskInTodos(id)) {
+      playBell();
+      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
+      setRunningTaskIndex(index);
     }
   };
 
@@ -736,7 +723,11 @@ const ToDoItem = ({
 
             <button
               onClick={isEditing ? updateTask : toggleEdit}
-              className={isRunning ? "isRunning-button" : "notRunning-button"}
+              className={
+                isRunning
+                  ? "isRunning-button"
+                  : "not-running-button" /*"button-84" Use this for the other button*/
+              }
               style={{
                 marginLeft: "1rem",
                 minWidth: "70px",

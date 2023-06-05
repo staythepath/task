@@ -2,8 +2,10 @@
   background-color: #333;
   height: 80px;
   display: flex;
-  justify-content: space-between;  /* Change from flex-start to space-between */
+  justify-content: space-between; /* Change from flex-start to space-between */
   align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
   position: fixed;
   width: 100%;
   top: 0;
@@ -92,10 +94,9 @@ span {
   top: 1%;
   background: #333;
   z-index: 1000;
-  right: -100%; 
+  right: -100%;
   transition: 850ms;
 }
-
 
 .auth-modal.show {
   right: 10px;
@@ -120,8 +121,6 @@ span {
   transition: 350ms;
 }
 
-
-
 .auth-button {
-  Margin-right: 2rem; /* when shown, slide in to 10px from the right */
+  margin-right: 2rem; /* when shown, slide in to 10px from the right */
 }

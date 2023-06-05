@@ -402,6 +402,10 @@ const ToDoList = ({
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
       <div className="ToDoList">
+        <div className="ToDoList-header">
+          <h1></h1>
+          <br />
+        </div>
         <NewTaskForm onSubmit={handleNewTask} />
         <div
           style={{

@@ -66,7 +66,7 @@
 }
 
 body {
-  background-color: #333;
+  background-color: #232427;
   color: #ccc;
   font-family: Arial, sans-serif;
   padding-left: 5rem;
@@ -456,10 +456,10 @@ span {
 .task {
   display: flex;
   min-width: 37rem;
-
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
-  background: #444;
+  background: rgba(68, 68, 68, 0.3); /* Semi-transparent background */
+  backdrop-filter: blur(5px);
   border-radius: 5px;
   border: 1px solid #666;
 }
@@ -497,8 +497,61 @@ span {
   width: 5rem;
 }
 
+/* CSS */
+.button-84 {
+  align-items: center;
+  background-color: initial;
+  background-image: linear-gradient(#444950, #353434);
+  border-radius: 5px;
+  border-width: 0;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  font-family: inherit;
+  font-size: 15px;
+  height: 35px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  overflow: hidden;
+  padding: 0 32px;
+  text-align: center;
+  text-decoration: none;
+  transform: translate3d(0, 0, 0);
+  transition: all 150ms;
+  vertical-align: baseline;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  width: 5rem;
+}
+
+.button-84:hover {
+  box-shadow: rgba(252, 252, 252, 0.2) 0 2px 8px;
+  opacity: 1;
+}
+
+.button-84:active {
+  outline: 0;
+}
+
+.button-84:focus {
+  box-shadow: rgba(0, 0, 0, 0.5) 0 0 0 3px;
+}
+
+@media (max-width: 420px) {
+  .button-84 {
+    height: 48px;
+  }
+}
+
 .notRunning-button {
-  background-color: #686868;
+  background-color: #2b2e36;
   color: #c0c0c0;
   border: 1px solid #000000;
   text-align: center;
