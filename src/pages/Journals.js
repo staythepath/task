@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   getDocs,
   collection,
@@ -9,8 +9,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
-import { useAuthState } from 'react-firebase-hooks/auth';
-
+import { useAuthState } from "react-firebase-hooks/auth";
 
 function Journal() {
   const [journals, setJournals] = useState([]);
@@ -18,9 +17,6 @@ function Journal() {
   const [newComplete, setNewComplete] = useState(false);
   const [updatedEntry, setUpdatedEntry] = useState("");
   const [user] = useAuthState(auth);
-
-
-
 
   const onSubmitEntry = async () => {
     const journalsRef = collection(db, "users", user.uid, "journals");
@@ -52,7 +48,7 @@ function Journal() {
       console.error(err);
     }
   }, [user.uid]);
-  
+
   useEffect(() => {
     getJournals();
   }, [getJournals]);
@@ -69,9 +65,12 @@ function Journal() {
     getJournals();
   };
 
-
   return (
     <div className="Journal">
+      <div className="ToDoList-header" style={{ paddingTop: "80px" }}>
+        <h1></h1>
+        <br />
+      </div>
       <div
         style={{
           display: "flex",
@@ -105,11 +104,7 @@ function Journal() {
             >
               {journal.currentTime?.toDate().toLocaleString()}
               <h3 style={{ marginLeft: "10px" }}>Complete?</h3>
-              <input
-                type="checkbox"
-                checked={journal.Complete}
-                disabled
-              />
+              <input type="checkbox" checked={journal.Complete} disabled />
             </div>
             <p style={{ margin: "1px" }}>{journal.Entry}</p>
             <div>
@@ -117,11 +112,12 @@ function Journal() {
                 placeholder="Edit Entry..."
                 onChange={(e) => setUpdatedEntry(e.target.value)}
               />
-              <button onClick={(e) => updateEntry(journal.id)}>
-                Submit
-              </button>
+              <button onClick={(e) => updateEntry(journal.id)}>Submit</button>
             </div>
-            <button onClick={() => deleteEntry(journal.id)}>
+            <button
+              style={{ margin: "10px" }}
+              onClick={() => deleteEntry(journal.id)}
+            >
               Delete Entry
             </button>
           </div>

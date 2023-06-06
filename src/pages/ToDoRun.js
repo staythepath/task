@@ -3,18 +3,17 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItemRun from "../components/ToDoItemRun";
-
-import { BsVolumeUpFill } from "react-icons/bs";
+import { BsPlayFill, BsPauseFill, BsVolumeUpFill } from "react-icons/bs";
+import { IconContext } from "react-icons";
 
 import { auth, db } from "../config/firebase";
 import {
-
   collection,
-
+  doc,
+  getDocs,
   query,
-  orderBy,
-
-  onSnapshot,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 const StyledSlider = styled(Slider)({
@@ -37,60 +36,77 @@ const StyledSlider = styled(Slider)({
   },
 });
 
-const ToDoRun = ({ todos, setTodos }) => {
-  const [completedTodos, setCompletedTodos] = useState([]);
+const ToDoRun = ({
+  todos,
+  setTodos,
+  completedTodos,
+  setCompletedTodos,
+  isRunning,
+  setIsRunning,
+}) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
-  const [volume, setVolume] = useState(50);
+  const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
-      if (user) {
-        // User is logged in
-        console.log("onAuthStateChanged thinks user is logged in")
-        
-        const todosRef = collection(db, `users/${user.uid}/todoLists`);
+  let userId = auth.currentUser.uid;
 
-        // Adding orderBy() to order the todos by 'order' field
-        const todosQuery = query(todosRef, orderBy("order"));
-
-        const unsubscribeFirestore = onSnapshot(todosQuery, (snapshot) => {
-          const userTodos = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setTodos(userTodos);
-        });
-
-        // return cleanup function for Firestore listener
-        return unsubscribeFirestore;
-      } else {
-        // User is logged out
-        console.log("onAuthStateChanged thinks user is logged out!")
-        // No Firestore cleanup needed as no listener set up
-      }
-    });
-
-    // Clean up the auth listener on unmount
-    return () => unsubscribeAuth();
-  }, [setTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
+  const todoListId = "your-todo-list-id";
 
   useEffect(() => {
-    localStorage.setItem("todos", JSON.stringify(todos));
-  }, [todos]);
+    const fetchTodos = async () => {
+      const todosQuery = query(
+        collection(db, `users/${userId}/todoLists/${todoListId}/todos`)
+      );
+      const todosSnapshot = await getDocs(todosQuery);
+      let todosData = todosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-  useEffect(() => {
-    const storedCompletedTodos =
-      JSON.parse(localStorage.getItem("completedTodos")) || [];
-    setCompletedTodos(storedCompletedTodos);
+      // Sort todos by order
+      todosData.sort((a, b) => a.order - b.order);
+
+      setTodos(todosData);
+    };
+
+    fetchTodos();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
-  }, [completedTodos]);
+    const fetchCompletedTodos = async () => {
+      const completedTodosQuery = query(
+        collection(db, `users/${userId}/todoLists/${todoListId}/completedTodos`)
+      );
+      const completedTodosSnapshot = await getDocs(completedTodosQuery);
+      const completedTodosData = completedTodosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCompletedTodos(completedTodosData);
+    };
 
-  const handleToggle = (id, completed) => {
+    fetchCompletedTodos();
+  }, []);
+
+  useEffect(() => {
+    console.log("we are about to update firestore with", todos);
+  }, [todos]);
+
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
+
+  const handleToggle = async (id, completed) => {
+    const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
     const taskIndex = todos.findIndex((task) => task.id === id);
+
+    let movedTask;
+
     if (taskIndex !== -1) {
       const updatedTask = {
         ...todos[taskIndex],
@@ -100,14 +116,48 @@ const ToDoRun = ({ todos, setTodos }) => {
       const newTodos = [...todos];
       newTodos.splice(taskIndex, 1);
       setTodos(newTodos);
+
       if (updatedTask.complete) {
         const completedTask = {
           ...updatedTask,
           isRunning: false,
+          order: null,
         };
         setCompletedTodos([...completedTodos, completedTask]);
+
+        // Update Firestore
+        movedTask = completedTask;
+        await deleteDoc(
+          doc(
+            db,
+            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
+          )
+        );
+        await setDoc(
+          doc(
+            db,
+            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
+          ),
+          movedTask
+        );
       } else {
         setTodos([...newTodos, updatedTask]);
+
+        // Update Firestore
+        movedTask = updatedTask;
+        await deleteDoc(
+          doc(
+            db,
+            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
+          )
+        );
+        await setDoc(
+          doc(
+            db,
+            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
+          ),
+          movedTask
+        );
       }
     } else {
       const completedTaskIndex = completedTodos.findIndex(
@@ -115,11 +165,14 @@ const ToDoRun = ({ todos, setTodos }) => {
       );
       const updatedTask = {
         ...completedTodos[completedTaskIndex],
-        complete: false, // Here we set the complete property to false, indicating the task is now incomplete
+        complete: false,
+        isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
       };
+      setRunningTaskIndex(-1);
       const newCompletedTodos = [...completedTodos];
       newCompletedTodos.splice(completedTaskIndex, 1);
       setCompletedTodos(newCompletedTodos);
+
       // Update the incomplete task with the correct values
       const incompleteTask = {
         ...updatedTask,
@@ -128,8 +181,25 @@ const ToDoRun = ({ todos, setTodos }) => {
         numCycles: updatedTask.numCycles,
         tilDone: updatedTask.tilDone,
         isRunning: false,
+        order: null,
       };
       setTodos([...todos, incompleteTask]);
+
+      // Update Firestore
+      movedTask = incompleteTask;
+      await deleteDoc(
+        doc(
+          db,
+          `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
+        )
+      );
+      await setDoc(
+        doc(
+          db,
+          `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
+        ),
+        movedTask
+      );
     }
   };
 
@@ -155,13 +225,13 @@ const ToDoRun = ({ todos, setTodos }) => {
   };
 
   const startFirstTask = () => {
-    if (todos.length > 0) {
+    if (todos.length > 0 && runningTaskIndex === -1) {
       setShowModal(true);
-      console.log("showModal:", showModal); // For debugging
     }
   };
 
   const actuallyStartFirstTask = () => {
+    playBell();
     if (todos.length > 0) {
       setRunningTaskIndex(0);
       let updatedTodos = [...todos];
@@ -169,6 +239,20 @@ const ToDoRun = ({ todos, setTodos }) => {
       setTodos(updatedTodos);
     }
     setShowModal(false);
+  };
+
+  const pauseOrResumeTask = () => {
+    playBell();
+    console.log("pause or resume task");
+    if (todos.length > 0 && runningTaskIndex !== -1) {
+      let updatedTodos = [...todos];
+      let isRunning = updatedTodos[runningTaskIndex].isRunning;
+      updatedTodos[runningTaskIndex] = {
+        ...updatedTodos[runningTaskIndex],
+        isRunning: !isRunning,
+      };
+      setTodos(updatedTodos);
+    }
   };
 
   const handleOnDragEnd = (result) => {
@@ -208,16 +292,37 @@ const ToDoRun = ({ todos, setTodos }) => {
           style={{
             display: "flex",
             justifyContent: "center",
+            paddingTop: "20px",
           }}
         >
           <button
-            onClick={startFirstTask}
+            onClick={
+              runningTaskIndex !== -1 ? pauseOrResumeTask : startFirstTask
+            }
             style={{
-              width: "10%",
-              height: "25%",
+              width: "17%",
+              height: "10%",
+              backgroundColor:
+                runningTaskIndex !== -1 && todos[runningTaskIndex].isRunning
+                  ? "#35dd02"
+                  : "",
             }}
           >
-            Start
+            {runningTaskIndex !== -1 ? (
+              todos[runningTaskIndex].isRunning ? (
+                <IconContext.Provider value={{ className: "react-icons" }}>
+                  <BsPauseFill />
+                </IconContext.Provider>
+              ) : (
+                <IconContext.Provider value={{ className: "react-icons" }}>
+                  <BsPlayFill />
+                </IconContext.Provider>
+              )
+            ) : (
+              <IconContext.Provider value={{ className: "react-icons" }}>
+                <BsPlayFill />
+              </IconContext.Provider>
+            )}
           </button>
         </div>
         <div
@@ -270,6 +375,7 @@ const ToDoRun = ({ todos, setTodos }) => {
                   onDelete={() => handleDelete(todo.id)}
                   tilDone={todo.tilDone}
                   isRunning={todo.isRunning}
+                  setIsRunning={setIsRunning}
                   runningTaskIndex={runningTaskIndex}
                   setRunningTaskIndex={setRunningTaskIndex}
                   isTaskInTodos={isTaskInTodos}

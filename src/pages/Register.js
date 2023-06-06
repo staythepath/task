@@ -12,6 +12,7 @@ function Register() {
   const [emailValid, setEmailValid] = useState(false);
   const [canSubmit, setCanSubmit] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [emailExists, setEmailExists] = useState(false); // Add a new state variable here
 
   useEffect(() => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -38,10 +39,8 @@ function Register() {
       );
       const uid = userCredential.user.uid;
 
-      // Create a reference to this user's document
       const userDoc = doc(db, "users", uid);
 
-      // Set the user document
       await setDoc(userDoc, {
         userInfo: {
           email: email,
@@ -50,11 +49,13 @@ function Register() {
       });
 
       setRegisterSuccess(true);
-      // Assuming you have set up React Router and have a way to navigate
-      // You'd navigate to another page here, for example:
       // history.push('/login');
     } catch (err) {
       console.error(err);
+      // If the error code is 'auth/email-already-in-use', set emailExists to true
+      if (err.code === "auth/email-already-in-use") {
+        setEmailExists(true);
+      }
     }
   };
 
@@ -80,11 +81,7 @@ function Register() {
         placeholder="Email..."
         onChange={(e) => setEmail(e.target.value)}
       />
-      {!emailValid && email !== "" && (
-        <p>
-          Use a fake email if you want, but it needs to be an email address.
-        </p>
-      )}
+
       <input
         className="register-input"
         placeholder="Password..."
@@ -102,6 +99,12 @@ function Register() {
         <p style={{ textAlign: "center" }}>
           Registration successful!
           <br /> You are logged in!
+        </p>
+      )}
+      {emailExists && <p>That e-mail has been used already!</p>}
+      {!emailValid && email !== "" && (
+        <p>
+          Use a fake email if you want, but it needs to be an email address.
         </p>
       )}
       <button

@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from "react";
+////////////This works but data.columns needs to be removed from that useEffect dependency array to prevent the loops
+
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import PriorityColumn from "../components/PriorityColumn";
 import "./Prio.css";
-import { collection, updateDoc, doc } from "firebase/firestore";
+import { collection, updateDoc, doc, getDocs } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 function Prio({ todos, setTodos }) {
+  const todoListId = "your-todo-list-id";
+
+  const [updateFirestore, setUpdateFirestore] = useState(false);
   const [data, setData] = useState({
-    tasks: todos.reduce(
-      (acc, todo) => ({
-        ...acc,
-        [todo.id]: { id: `${todo.id}`, content: `${todo.task}` },
-      }),
-      {}
-    ),
+    tasks: {},
     columns: {
       "column-1": {
         id: "column-1",
         title: "Tasks",
         sub: "If it takes less than 5 minutes leave it here",
-        taskIds: todos.map((todo, index) => todo.id),
+        taskIds: [],
       },
       "column-2": {
         id: "column-2",
@@ -44,14 +49,69 @@ function Prio({ todos, setTodos }) {
     },
     columnOrder: ["column-1", "column-2", "column-3", "column-4", "column-5"],
   });
-
+  const columnsRef = useRef(data.columns);
   console.log(data);
 
-  let userId = auth.currentUser.uid;
+  // Create a memoized todosRef
+  const todosRef = useMemo(
+    () =>
+      collection(
+        db,
+        `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`
+      ),
+    []
+  );
 
-  const todosRef = collection(db, `users/${userId}/todoLists`);
+  const fetchTasks = useCallback(async () => {
+    const tasksSnapshot = await getDocs(todosRef);
+    const tasksData = tasksSnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => a.order - b.order); // sort tasks by order
 
-  const [updateFirestore, setUpdateFirestore] = useState(false);
+    // Update todos
+    setTodos(tasksData);
+    console.log("Fetch Tasks Ran");
+    console.log("Here is task data: ", tasksData);
+
+    // Distribute tasks among columns based on their column value
+    const tasks = {};
+    tasksData.forEach((task) => {
+      tasks[task.id] = task;
+    });
+
+    // Return the tasks
+    return tasks;
+  }, [todosRef, setTodos]); // remove data.columns from here
+
+  useEffect(() => {
+    fetchTasks().then((tasks) => {
+      const newColumns = { ...columnsRef.current }; // Create a new copy of columns object
+
+      // We want to place all tasks in column-1 so let's start by clearing it
+      newColumns["column-1"].taskIds = [];
+
+      Object.keys(tasks).forEach((taskId) => {
+        const task = tasks[taskId];
+
+        // Ignore the original column attribute of the task and always place it in column-1
+        newColumns["column-1"].taskIds = [
+          ...newColumns["column-1"].taskIds,
+          task.id,
+        ];
+      });
+
+      // Update data
+      columnsRef.current = newColumns;
+      setData((prevData) => ({
+        ...prevData,
+        tasks,
+        columns: newColumns,
+      }));
+    });
+  }, [fetchTasks]); // fetchTasks is a dependency here
 
   const updateOrder = (newState) => {
     let order = 0; // Initialize order counter
@@ -61,15 +121,16 @@ function Prio({ todos, setTodos }) {
     newState.columnOrder.forEach((columnId) => {
       const column = newState.columns[columnId];
 
-      // Iterate over all tasks in the current column in their order
+      // Iterate over all tasaks in the current column in their order
       column.taskIds.forEach((taskId) => {
         // Find the corresponding todo in the original todos array
         const todo = todos.find((todo) => todo.id === taskId);
 
-        // Create a new todo with the updated order
+        // Create a new todo with the updated order and column
         const newTodo = {
           ...todo,
           order, // Assign the current order to the task
+          column: columnId, // Assign the current column to the task
         };
 
         // Push the new todo to the newTodos array
@@ -81,11 +142,13 @@ function Prio({ todos, setTodos }) {
 
     // Update todos in local state
     setTodos(newTodos);
+
+    // Set updateFirestore flag to true
+    setUpdateFirestore(true);
   };
 
   const onDragEnd = async (result) => {
-    const { destination, source } = result;
-    setUpdateFirestore(true);
+    const { destination, source, draggableId } = result;
 
     // dropped outside the list
     if (!destination) {
@@ -114,9 +177,12 @@ function Prio({ todos, setTodos }) {
         },
       };
 
+      // Update the local state
       setData(newState);
 
-      updateOrder(newState); // Update order
+      // Update order and todos in local state
+      updateOrder(newState);
+
       return;
     }
 
@@ -144,11 +210,15 @@ function Prio({ todos, setTodos }) {
       },
     };
 
+    // Update column attribute of the moved task in local state
+    const newTask = { ...newState.tasks[draggableId], column: newFinish.id };
+    newState.tasks[draggableId] = newTask;
+
+    // Set data
     setData(newState);
 
+    // Update order and todos in local state
     updateOrder(newState);
-
-    // Update todos in local state
   };
 
   useEffect(() => {
@@ -170,7 +240,15 @@ function Prio({ todos, setTodos }) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <h2 style={{ textAlign: "center" }}>Prioritize your tasks</h2>
+      <h2
+        style={{
+          paddingTop: "90px",
+          paddingBottom: "30px",
+          textAlign: "center",
+        }}
+      >
+        Prioritize your tasks
+      </h2>
       <div className="priority-columns-container">
         {columnOrder.map((columnId) => {
           const column = columns[columnId];

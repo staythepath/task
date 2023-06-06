@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-import { BsPlayFill, BsPauseFill } from "react-icons/bs";
-
 const ToDoItemRun = ({
   id,
   index,
@@ -11,14 +9,14 @@ const ToDoItemRun = ({
   secondaryDuration: initialSecondaryDuration,
   numCycles: initialNumCycles,
   onToggle,
-
   handleUpdate,
   tilDone,
   runningTaskIndex,
   setRunningTaskIndex,
   isTaskInTodos,
-
   volume,
+  isRunning,
+  setIsRunning,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -27,9 +25,9 @@ const ToDoItemRun = ({
     initialSecondaryDuration
   );
   const [timeLeft, setTimeLeft] = useState(primaryDuration);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPrimary, setIsPrimary] = useState(true);
 
+  const [isPrimary, setIsPrimary] = useState(true);
+  const [previousIndex, setPreviousIndex] = useState(null);
   const [currentCycle, setCurrentCycle] = useState(0);
   const numCycles = initialNumCycles;
 
@@ -52,7 +50,7 @@ const ToDoItemRun = ({
     if (index === runningTaskIndex && isTaskInTodos(id)) {
       setIsRunning(true);
     }
-  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
+  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id, setIsRunning]);
 
   useEffect(() => {
     let timer;
@@ -67,17 +65,17 @@ const ToDoItemRun = ({
     return () => clearInterval(timer);
   }, [isRunning, tilDone]);
 
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
+
   useEffect(() => {
     let timer;
-
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
 
     const handleTaskCompletion = () => {
       console.log(tilDone);
@@ -166,6 +164,7 @@ const ToDoItemRun = ({
     setRunningTaskIndex,
     isTaskInTodos,
     volume,
+    setIsRunning,
   ]);
 
   const crossedOutStyle = {
@@ -173,19 +172,12 @@ const ToDoItemRun = ({
     opacity: 0.5,
   };
 
-  const toggleTimer = () => {
-    setIsRunning(!isRunning);
-
-    if (isRunning) {
-    }
-  };
-
   return (
     <div className="task-container-">
       <li className={isRunning ? "isRunning" : "task"}>
         <label
           className={
-            isRunning  ? "isRunning-checkbox-container" : "checkbox-container"
+            isRunning ? "isRunning-checkbox-container" : "checkbox-container"
           }
         >
           {isRunning && tilDone ? (
@@ -209,12 +201,16 @@ const ToDoItemRun = ({
               }}
             />
           ) : (
-            <input type="checkbox" checked={complete} onChange={() => {
+            <input
+              type="checkbox"
+              checked={complete}
+              onChange={() => {
                 const updatedTask = {
                   isRunning: false,
                 };
                 handleUpdate(updatedTask);
-              }}/>
+              }}
+            />
           )}
           <span className="checkbox"></span>
         </label>
@@ -230,45 +226,6 @@ const ToDoItemRun = ({
             justifyContent: "space-around",
           }}
         >
-          {runningTaskIndex === index && !complete ? (
-            isRunning ? (
-              <button
-                onClick={toggleTimer}
-                style={{
-                  backgroundColor: "transparent",
-                  marginRight: "1px",
-                  maxHeight: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                <BsPauseFill size={25} color={"#227f08"} />{" "}
-                {/* This could be your pause icon */}
-              </button>
-            ) : (
-              <button
-                onClick={toggleTimer}
-                style={{
-                  backgroundColor: "transparent",
-                  marginRight: "1px",
-                  maxHeight: "1px",
-                  marginBottom: "25px",
-                }}
-              >
-                <BsPlayFill size={25} /> {/* This could be your play icon */}
-              </button>
-            )
-          ) : (
-            <button
-              style={{
-                backgroundColor: "transparent",
-                color: "transparent",
-                marginRight: "4px",
-                maxHeight: "35px",
-              }}
-            >
-              <BsPlayFill size={20} /> {/* This could be your pause icon */}
-            </button>
-          )}
           <div className="countdown">
             {!tilDone && (
               <input

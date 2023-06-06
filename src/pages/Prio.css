@@ -2,7 +2,7 @@
   display: grid;
   justify-content: space-between;
   gap: 20px;
-  background-color: #333;
+  background-color: transparent;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-template-areas:

@@ -20,6 +20,7 @@ const ToDoItem = ({
   draggableId,
   volume,
   order,
+  todos,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -348,11 +349,11 @@ const ToDoItem = ({
                 });
               }}
               style={{
-                marginLeft: "1rem",
-                marginRight: "1rem",
-                maxHeight: "1rem",
-                minWidth: "3rem",
-                backgroundColor: isRunning ? "#abf296" : "transparent",
+                marginLeft: "20px",
+                marginRight: "15px",
+
+                minWidth: "2rem",
+                backgroundColor: isRunning ? "#abf296" : "#66666667",
                 color: isRunning ? "#227f08" : "",
               }}
             />
@@ -367,6 +368,8 @@ const ToDoItem = ({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-around",
+              backgroundColor: "transparent",
+              margin: "1px",
             }}
           >
             {isEditing && (
@@ -438,12 +441,12 @@ const ToDoItem = ({
                         : "number-input"
                     }
                     style={{
-                      borderColor: cyclesFocused ? "#666" : "transparent",
+                      borderColor: cyclesFocused ? "#666" : "#666",
                       backgroundColor: cyclesFocused
                         ? isRunning
                           ? "#abf296"
-                          : "#444"
-                        : "transparent",
+                          : "#66666667"
+                        : "#66666667",
                       color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setCyclesFocused(true)}
@@ -538,14 +541,12 @@ const ToDoItem = ({
                     }}
                     className="timer-input"
                     style={{
-                      borderColor: primaryDurationFocused
-                        ? "#666"
-                        : "transparent",
+                      borderColor: primaryDurationFocused ? "#666" : "#666",
                       backgroundColor: primaryDurationFocused
                         ? !isRunning
-                          ? "#444"
+                          ? "#66666667"
                           : "#abf296"
-                        : "transparent",
+                        : "#66666667",
                       color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setPrimaryDurationFocused(true)}
@@ -618,14 +619,12 @@ const ToDoItem = ({
                     }}
                     className="timer-input"
                     style={{
-                      borderColor: secondaryDurationFocused
-                        ? "#666"
-                        : "transparent",
+                      borderColor: secondaryDurationFocused ? "#666" : "#666",
                       backgroundColor: secondaryDurationFocused
                         ? !isRunning
-                          ? "#444"
+                          ? "#66666667"
                           : "#abf296"
-                        : "transparent",
+                        : "#66666667",
                       color: isRunning ? "#227f08" : "",
                     }}
                     onFocus={() => setSecondaryDurationFocused(true)}
@@ -641,21 +640,6 @@ const ToDoItem = ({
             )}
 
             <div className="countdown">
-              {!tilDone && (
-                <input
-                  type="text"
-                  value={numCycles - currentCycle}
-                  readOnly
-                  className={isRunning ? "isRunningCountdown" : ""}
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginRight: ".5rem",
-                  }}
-                />
-              )}
-            </div>
-            <div className="countdown">
               {tilDone ? (
                 <input
                   type="text"
@@ -663,11 +647,12 @@ const ToDoItem = ({
                     elapsedTime % 60
                   ).padStart(2, "0")}`}
                   readOnly
-                  className={isRunning ? "isRunningCountdown" : ""}
+                  className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
                     width: "100%",
                     textAlign: "center",
                     marginLeft: ".5rem",
+                    marginRight: ".5rem",
                   }}
                 />
               ) : (
@@ -677,7 +662,7 @@ const ToDoItem = ({
                     timeLeft % 60
                   ).padStart(2, "0")}`}
                   readOnly
-                  className={isRunning ? "isRunningCountdown" : ""}
+                  className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
                     width: "100%",
                     textAlign: "center",
@@ -689,14 +674,16 @@ const ToDoItem = ({
 
             {!isEditing && (
               <>
-                <button
-                  onClick={toggleTimer}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  {isRunning ? "Pause" : "Start"}
-                </button>
+                {!complete && (
+                  <button
+                    onClick={toggleTimer}
+                    className={
+                      isRunning ? "isRunning-button" : "notRunning-button"
+                    }
+                  >
+                    {isRunning ? "Pause" : "Start"}
+                  </button>
+                )}
                 <button
                   onClick={resetTimer}
                   style={{ marginLeft: "1rem" }}
@@ -717,9 +704,14 @@ const ToDoItem = ({
                 </button>
               </>
             )}
+
             <button
               onClick={isEditing ? updateTask : toggleEdit}
-              className={isRunning ? "isRunning-button" : "notRunning-button"}
+              className={
+                isRunning
+                  ? "isRunning-button"
+                  : "notRunning-button" /*"button-84" Use this for the other button*/
+              }
               style={{
                 marginLeft: "1rem",
                 minWidth: "70px",
