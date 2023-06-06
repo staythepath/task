@@ -5,7 +5,7 @@ import Home from "./pages/Home";
 import Prio from "./pages/Prio";
 import ToDoRun from "./pages/ToDoRun";
 import Auth from "./components/Auth";
-import Journals from "./pages/Journals";
+//import Journals from "./pages/Journals";
 import Register from "./pages/Register";
 import CalendarPage from "./pages/Calendar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
