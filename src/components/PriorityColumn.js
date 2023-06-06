@@ -1,6 +1,7 @@
 import React from "react";
 import { Droppable } from "react-beautiful-dnd";
 import PriorityCard from "./PriorityCard";
+import "../pages/Prio.css";
 
 const PriorityColumn = ({ column, tasks, className }) => {
   return (
@@ -12,10 +13,10 @@ const PriorityColumn = ({ column, tasks, className }) => {
           ref={provided.innerRef}
           style={{
             minWidth: "200px",
-            border: "1px solid black",
+
             borderRadius: "4px",
             padding: "10px",
-            backgroundColor: "#4b4a4a",
+            backgroundColor: "#4444441a",
             minHeight: "250px",
           }}
         >

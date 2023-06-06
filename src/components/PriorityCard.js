@@ -10,11 +10,12 @@ const PriorityCard = ({ task, index }) => {
           {...provided.dragHandleProps}
           ref={provided.innerRef}
           style={{
-            padding: "10px",
-            border: "1px solid black",
+            padding: "13px",
+
             margin: "10px",
             borderRadius: "4px",
-            backgroundColor: snapshot.isDragging ? "#555" : "#222", // this is how you use isDragging
+            backdropFilter: "blur(10px)",
+            backgroundColor: snapshot.isDragging ? "#17135f48" : "#22222252", // this is how you use isDragging
             ...provided.draggableProps.style, // this should come last to allow the movement of the element
           }}
         >

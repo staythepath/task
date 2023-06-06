@@ -7,6 +7,7 @@ import ToDoRun from "./pages/ToDoRun";
 import Auth from "./components/Auth";
 import Journals from "./pages/Journals";
 import Register from "./pages/Register";
+import CalendarPage from "./pages/Calendar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot } from "firebase/firestore";
@@ -125,11 +126,18 @@ function App() {
                 )
               }
             />
+            <Route
+              path="/Calendar"
+              element={
+                isAuth ? <CalendarPage user={auth.currentUser} /> : <Home />
+              }
+            />
             <Route path="/Register" element={<Register />} />
             <Route path="/Auth" element={<Auth />} />
           </Routes>
         </div>
       </Router>
+
       <div />
     </>
   );

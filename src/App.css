@@ -65,14 +65,22 @@
   color: #333;
 }
 
+html,
 body {
-  background-color: #232427;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: linear-gradient(to bottom, #444950, #131225);
+  background-attachment: fixed;
   color: #ccc;
   font-family: Arial, sans-serif;
   padding-left: 5rem;
   padding-right: 5rem;
   margin: 0;
-  padding-top: 80px;
+  padding-bottom: 0px;
 }
 
 isRunning-body {
@@ -98,9 +106,9 @@ input[type="text"] {
   padding: 0.5rem;
   font-size: 1rem;
   flex-grow: 1;
-  border: 1px solid #666;
+  border: 1px solid transparent;
   border-radius: 4px;
-  background-color: #444;
+  background-color: #66666667;
   color: #ccc;
 }
 
@@ -131,6 +139,7 @@ button {
   justify-content: center;
   margin-bottom: 1.5rem;
   align-content: space-around;
+  padding-top: 80px;
 }
 
 ul {
@@ -147,10 +156,18 @@ li {
 
 input[type="checkbox"] {
   margin-right: 1rem;
+  margin-left: 0.5rem;
 }
 
 span {
   flex-grow: 1;
+}
+
+.react-icons {
+  font-size: 2rem;
+  margin-bottom: 0px;
+  margin-top: 4px;
+  size: 10px;
 }
 
 .hidden-timer-input:-moz-focusring {
@@ -292,7 +309,7 @@ span {
 
 .timer-change-btn {
   padding: 0.25rem 0.5rem;
-  font-size: 0.6rem;
+  font-size: 11px;
   border: none;
   border-radius: 4px;
   background-color: #666;
@@ -303,13 +320,11 @@ span {
 .timer-change-btn-plus {
   border-bottom: 1px solid #ccc;
   border-radius: 4px 4px 0 0;
-  border: 1px solid #000000;
 }
 
 .timer-change-btn-minus {
   border-radius: 0 0 4px 4px;
   padding: 0.25rem 0.5rem;
-  border: 1px solid #000000;
 }
 
 .strike-through {
@@ -458,10 +473,10 @@ span {
   min-width: 37rem;
   padding: 0.5rem;
   margin: 0 0 0.5rem 0;
-  background: rgba(68, 68, 68, 0.3); /* Semi-transparent background */
+  background: rgba(68, 68, 68, 0.1); /* Semi-transparent background */
   backdrop-filter: blur(5px);
   border-radius: 5px;
-  border: 1px solid #666;
+  border: 1px solid rgba(68, 68, 68, 1);
 }
 
 .isRunning-isEditingTask {
@@ -478,14 +493,13 @@ span {
 
 .task-isEditingTask {
   display: flex;
-  min-width: 47rem;
-
-  padding: 0.5rem;
+  min-width: 37rem;
+  padding: 5px;
   margin: 0 0 0.5rem 0;
-  background: #444;
+  background: #4444441a; /* Semi-transparent background */
+  backdrop-filter: blur(5px);
   border-radius: 5px;
-  border: 1px solid #666;
-  box-sizing: border-box;
+  border: 1px solid #444444;
 }
 
 .isRunning-button {
@@ -551,9 +565,10 @@ span {
 }
 
 .notRunning-button {
-  background-color: #2b2e36;
+  background-color: #66666667;
   color: #c0c0c0;
-  border: 1px solid #000000;
+  border-style: hidden;
+  border-color: #000000;
   text-align: center;
   margin-left: 1rem;
   width: 5rem;
@@ -572,9 +587,10 @@ span {
 
 .countdown {
   width: 40px;
-  textalign: center;
-  margin-right: 1rem;
-  border: 3px #000000 !important;
+  text-align: center;
+  margin-right: 1.5rem;
+  z-index: 2000;
+  border: none;
 }
 
 .countdownRun {

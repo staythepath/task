@@ -3,8 +3,8 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItemRun from "../components/ToDoItemRun";
-import { BsPlayFill, BsPauseFill, BsArrowRepeat } from "react-icons/bs";
-import { BsVolumeUpFill } from "react-icons/bs";
+import { BsPlayFill, BsPauseFill, BsVolumeUpFill } from "react-icons/bs";
+import { IconContext } from "react-icons";
 
 import { auth, db } from "../config/firebase";
 import {
@@ -292,6 +292,7 @@ const ToDoRun = ({
           style={{
             display: "flex",
             justifyContent: "center",
+            paddingTop: "20px",
           }}
         >
           <button
@@ -299,15 +300,29 @@ const ToDoRun = ({
               runningTaskIndex !== -1 ? pauseOrResumeTask : startFirstTask
             }
             style={{
-              width: "10%",
-              height: "25%",
+              width: "17%",
+              height: "10%",
+              backgroundColor:
+                runningTaskIndex !== -1 && todos[runningTaskIndex].isRunning
+                  ? "#35dd02"
+                  : "",
             }}
           >
-            {runningTaskIndex !== -1
-              ? todos[runningTaskIndex].isRunning
-                ? "Pause"
-                : "Resume"
-              : "Start"}
+            {runningTaskIndex !== -1 ? (
+              todos[runningTaskIndex].isRunning ? (
+                <IconContext.Provider value={{ className: "react-icons" }}>
+                  <BsPauseFill />
+                </IconContext.Provider>
+              ) : (
+                <IconContext.Provider value={{ className: "react-icons" }}>
+                  <BsPlayFill />
+                </IconContext.Provider>
+              )
+            ) : (
+              <IconContext.Provider value={{ className: "react-icons" }}>
+                <BsPlayFill />
+              </IconContext.Provider>
+            )}
           </button>
         </div>
         <div

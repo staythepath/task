@@ -67,7 +67,7 @@ function Journal() {
 
   return (
     <div className="Journal">
-      <div className="ToDoList-header">
+      <div className="ToDoList-header" style={{ paddingTop: "80px" }}>
         <h1></h1>
         <br />
       </div>
@@ -114,7 +114,10 @@ function Journal() {
               />
               <button onClick={(e) => updateEntry(journal.id)}>Submit</button>
             </div>
-            <button onClick={() => deleteEntry(journal.id)}>
+            <button
+              style={{ margin: "10px" }}
+              onClick={() => deleteEntry(journal.id)}
+            >
               Delete Entry
             </button>
           </div>

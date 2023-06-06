@@ -240,7 +240,15 @@ function Prio({ todos, setTodos }) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <h2 style={{ textAlign: "center" }}>Prioritize your tasks</h2>
+      <h2
+        style={{
+          paddingTop: "90px",
+          paddingBottom: "30px",
+          textAlign: "center",
+        }}
+      >
+        Prioritize your tasks
+      </h2>
       <div className="priority-columns-container">
         {columnOrder.map((columnId) => {
           const column = columns[columnId];

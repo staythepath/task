@@ -6,6 +6,7 @@ import { SidebarData } from "./SidebarData";
 import "./Navbar.css";
 import { IconContext } from "react-icons";
 import Auth from "./Auth";
+import Calendar from "../pages/Calendar";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
@@ -123,17 +124,10 @@ function Navbar() {
           ref={sidebarRef}
           className={sidebar ? "nav-menu active" : "nav-menu"}
         >
-          <ul className="nav-menu-items" onClick={showSidebar}>
-            <li className="navbar-toggle">
-              <Link to="#" className="menu-bars">
-                <div style={{ marginLeft: "10px" }}>
-                  <AiIcons.AiOutlineClose />
-                </div>
-              </Link>
-            </li>
+          <ul className="nav-menu-items">
             {SidebarData.map((item, index) => {
               return (
-                <li key={index} className={item.cName}>
+                <li key={index} className={item.cName} onClick={showSidebar}>
                   <Link to={item.path}>
                     {item.icon}
                     <span>{item.title}</span>
@@ -141,6 +135,8 @@ function Navbar() {
                 </li>
               );
             })}
+
+            <Calendar />
           </ul>
         </nav>
       </IconContext.Provider>
