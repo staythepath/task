@@ -33,7 +33,8 @@
   height: 80vh;
   display: flex;
   justify-content: center;
-  position: fixed;
+  position: relative;
+  min-height: 100vh;
   top: 0;
   left: -100%;
   transition: 850ms;
@@ -73,6 +74,11 @@
 
 .nav-menu-items {
   width: 100%;
+  position: relative;
+  min-height: 100vh;
+  display: flex; /* Add this line */
+  flex-direction: column; /* Add this line */
+  justify-content: space-between; /* Add this line */
 }
 
 .navbar-toggle {
@@ -121,6 +127,7 @@ span {
 
 .nav-menu.active {
   left: 0;
+  top: 0;
   transition: 350ms;
 }
 

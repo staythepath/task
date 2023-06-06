@@ -116,7 +116,7 @@ function App() {
                 )
               }
             />
-            <Route
+            {/*   <Route
               path="/Journals"
               element={
                 isAuth ? (
@@ -126,6 +126,8 @@ function App() {
                 )
               }
             />
+          */}
+
             <Route
               path="/Calendar"
               element={

@@ -1,13 +1,13 @@
 .calendar-container {
-  padding-top: 220px;
   display: flex;
   justify-content: center;
-  min-height: 500px;
+  min-height: 360px;
+  margin-top: auto; /* Add this line */
 }
 
 .react-calendar {
   width: 400px; /* Adjust this to the size you want */
-  height: 600px; /* Adjust this to the size you want */
+
   max-width: 92%;
   background: transparent;
 
