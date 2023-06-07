@@ -53,6 +53,24 @@ const ToDoList = ({
 }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(20);
+  const [user, setUser] = useState({ role: "guest" }); // Default user state
+
+  useEffect(() => {
+    // This observer returns the current user if there's one logged in.
+    // Otherwise, it returns null.
+    const unsubscribe = auth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        // User is signed in.
+        setUser(authUser);
+      } else {
+        // No user is signed in. Set user to guest.
+        setUser({ role: "guest" });
+      }
+    });
+
+    // Unsubscribe from the listener when the component is unmounted.
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -97,14 +115,22 @@ const ToDoList = ({
           unsubscribeTodos();
           unsubscribeCompletedTodos();
         };
+      } else {
+        // If no user is logged in, then load the data from local storage
+        const localStorageTodos = localStorage.getItem("todos");
+        const localStorageCompletedTodos =
+          localStorage.getItem("completedTodos");
+
+        if (localStorageTodos && localStorageCompletedTodos) {
+          setTodos(JSON.parse(localStorageTodos));
+          setCompletedTodos(JSON.parse(localStorageCompletedTodos));
+        }
       }
     });
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, [setTodos, setCompletedTodos]); // Empty array means this effect runs once on mount and cleanup on unmount
-
-  // ...other code
+  }, [setTodos, setCompletedTodos]);
 
   const handleToggle = async (id, completed) => {
     const todoListId = `${date.getFullYear()}-${
@@ -242,16 +268,18 @@ const ToDoList = ({
   };
 
   const handleDelete = (id) => {
-    // Deleting the task from Firestore
-    deleteTask(auth.currentUser.uid, id)
-      .then(() => {
-        const newTodos = todos.filter((todo) => todo.id !== id);
-        setTodos(newTodos);
-        console.log("Task deleted from Firestore and from state: ", id);
-      })
-      .catch((error) => {
-        console.error("Error deleting task: ", error);
-      });
+    if (user.uid) {
+      // Deleting the task from Firestore
+      deleteTask(user.uid, id)
+        .then(() => {
+          const newTodos = todos.filter((todo) => todo.id !== id);
+          setTodos(newTodos);
+          console.log("Task deleted from Firestore and from state: ", id);
+        })
+        .catch((error) => {
+          console.error("Error deleting task: ", error);
+        });
+    }
   };
 
   const isTaskInTodos = (taskId) => {
@@ -308,17 +336,29 @@ const ToDoList = ({
       date.getMonth() + 1
     }-${date.getDate()}`;
 
-    const todosRef = collection(
-      db,
-      `users/${userId}/todoLists/${todoListId}/todos/`
-    );
+    if (userId) {
+      const todosRef = collection(
+        db,
+        `users/${userId}/todoLists/${todoListId}/todos/`
+      );
 
-    try {
-      const docRef = await addDoc(todosRef, task);
-      console.log("Document written with ID: ", docRef.id);
-      return docRef; // Return the docRef so it can be used in handleNewTask
-    } catch (e) {
-      console.error("Error adding document: ", e);
+      try {
+        const docRef = await addDoc(todosRef, task);
+        console.log("Document written with ID: ", docRef.id);
+        return docRef; // Return the docRef so it can be used in handleNewTask
+      } catch (e) {
+        console.error("Error adding document: ", e);
+      }
+    } else {
+      // If no user is logged in, then store the data in local storage
+      const newId = Date.now(); // Create a new ID based on the current timestamp
+      const newTask = { ...task, id: newId }; // Create a new task with this ID
+      const updatedTodos = [...todos, newTask]; // Add the new task to the current state
+
+      setTodos(updatedTodos); // Update the state
+      localStorage.setItem("todos", JSON.parse(updatedTodos)); // Store the updated state in local storage
+
+      return Promise.resolve({ id: newId }); // Return a resolved promise with the new ID
     }
   };
 
@@ -343,7 +383,7 @@ const ToDoList = ({
     };
 
     // Adding the new task to Firestore
-    addTask(auth.currentUser.uid, newTodo)
+    addTask(auth.currentUser ? auth.currentUser.uid : null, newTodo)
       .then((docRef) => {
         // Update newTodo id with Firestore document id
         newTodo.id = docRef.id;
@@ -518,3 +558,5 @@ const ToDoList = ({
 };
 
 export default ToDoList;
+
+////////////////////////////////////////////////////////////////

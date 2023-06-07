@@ -74,18 +74,14 @@ function App() {
               <Route
                 path="/ToDoList"
                 element={
-                  isAuth ? (
-                    <ToDoList
-                      todos={todos}
-                      setTodos={setTodos}
-                      completedTodos={completedTodos}
-                      setCompletedTodos={setCompletedTodos}
-                      isRunning={isRunning}
-                      setIsRunning={setIsRunning.bind(this)}
-                    />
-                  ) : (
-                    <Home />
-                  )
+                  <ToDoList
+                    todos={todos}
+                    setTodos={setTodos}
+                    completedTodos={completedTodos}
+                    setCompletedTodos={setCompletedTodos}
+                    isRunning={isRunning}
+                    setIsRunning={setIsRunning.bind(this)}
+                  />
                 }
               />
               <Route

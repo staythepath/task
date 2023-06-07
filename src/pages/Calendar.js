@@ -6,7 +6,7 @@ import "./Calendar.css";
 import { DateContext } from "../DateContex";
 import { useNavigate } from "react-router-dom"; // import useNavigate
 
-const CalendarPage = () => {
+const CalendarPage = ({ closeSidebar }) => {
   const [value, onChange] = useState(new Date());
   const [events, setEvents] = useState({});
   const { setSelectedDate } = useContext(DateContext);
@@ -29,6 +29,7 @@ const CalendarPage = () => {
   }, [user]);
 
   const handleDayClick = async (date) => {
+    closeSidebar();
     if (!user) {
       console.log("User is not defined");
       return;

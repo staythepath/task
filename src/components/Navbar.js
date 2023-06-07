@@ -147,7 +147,7 @@ function Navbar() {
               );
             })}
 
-            <Calendar />
+            <Calendar closeSidebar={closeSidebar} />
           </ul>
         </nav>
       </IconContext.Provider>
