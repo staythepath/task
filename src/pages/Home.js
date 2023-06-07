@@ -2,7 +2,7 @@ import React from "react";
 
 function Home({ todos, setTodos }) {
   return (
-    <div className="ToDoList">
+    <div className="ToDoList" style={{ paddingTop: "80px" }}>
       <h1>Home</h1>
       <div style={{ position: "relative", textAlign: "center" }}>
         <h4 style={{ textAlign: "center" }}>

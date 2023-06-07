@@ -1,6 +1,7 @@
+////////////////////////////////////////////////////////////////////
 import React, { useState, useEffect, useRef } from "react";
 import * as FaIcons from "react-icons/fa";
-import * as AiIcons from "react-icons/ai";
+
 import { Link } from "react-router-dom";
 import { SidebarData } from "./SidebarData";
 import "./Navbar.css";
@@ -53,7 +54,9 @@ function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  const showSidebar = () => setSidebar(!sidebar);
+  const openSidebar = () => setSidebar(true);
+  const closeSidebar = () => setSidebar(false);
+
   const handleShowAuth = () => setShowAuth(!showAuth);
 
   const handleLogout = () => {
@@ -94,11 +97,19 @@ function Navbar() {
       <IconContext.Provider value={{ color: "#fff" }}>
         <div className="navbar">
           <Link to="#" className="menu-bars">
-            <FaIcons.FaBars
-              onClick={showSidebar}
-              style={{ marginLeft: "10px" }}
-            />
+            {sidebar ? (
+              <FaIcons.FaTimes
+                onClick={closeSidebar}
+                style={{ marginLeft: "10px" }}
+              />
+            ) : (
+              <FaIcons.FaBars
+                onClick={openSidebar}
+                style={{ marginLeft: "10px" }}
+              />
+            )}
           </Link>
+
           <h2 className="navbar-logo">Obey the Bell</h2>
           {user ? (
             <div style={{ display: "flex", alignItems: "center" }}>
@@ -127,7 +138,7 @@ function Navbar() {
           <ul className="nav-menu-items">
             {SidebarData.map((item, index) => {
               return (
-                <li key={index} className={item.cName} onClick={showSidebar}>
+                <li key={index} className={item.cName} onClick={closeSidebar}>
                   <Link to={item.path}>
                     {item.icon}
                     <span>{item.title}</span>

@@ -13,7 +13,6 @@ const PriorityColumn = ({ column, tasks, className }) => {
           ref={provided.innerRef}
           style={{
             minWidth: "200px",
-
             borderRadius: "4px",
             padding: "10px",
             backgroundColor: "#4444441a",

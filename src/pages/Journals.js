@@ -3,7 +3,7 @@ import {
   getDocs,
   collection,
   doc,
-  addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp,
@@ -18,13 +18,26 @@ function Journal() {
   const [updatedEntry, setUpdatedEntry] = useState("");
   const [user] = useAuthState(auth);
 
+  const date = new Date();
+
+  const generateDocId = () => {
+    const formattedDate = `${date.getFullYear()}-${
+      date.getMonth() + 1
+    }-${date.getDate()}`;
+    const formattedTime = `${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
+    return `${formattedDate}_${formattedTime}`;
+  };
+
   const onSubmitEntry = async () => {
     const journalsRef = collection(db, "users", user.uid, "journals");
+    const newDocId = generateDocId();
+    const newDocRef = doc(journalsRef, newDocId);
     try {
-      await addDoc(journalsRef, {
+      await setDoc(newDocRef, {
         Complete: newComplete,
         currentTime: serverTimestamp(),
         Entry: newEntry,
+        date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
       });
       setNewEntry("");
       setNewComplete(false);
@@ -68,7 +81,7 @@ function Journal() {
   return (
     <div className="Journal">
       <div className="ToDoList-header" style={{ paddingTop: "80px" }}>
-        <h1></h1>
+        <h1> </h1>
         <br />
       </div>
       <div

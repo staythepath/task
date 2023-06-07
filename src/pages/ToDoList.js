@@ -38,7 +38,10 @@ const StyledSlider = styled(Slider)({
   },
 });
 
-const todoListId = "your-todo-list-id";
+const date = new Date();
+const todoListId = `${date.getFullYear()}-${
+  date.getMonth() + 1
+}-${date.getDate()}`;
 
 const ToDoList = ({
   todos,
@@ -54,7 +57,9 @@ const ToDoList = ({
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
-        const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
+        const todoListId = `${date.getFullYear()}-${
+          date.getMonth() + 1
+        }-${date.getDate()}`;
 
         const todosRef = collection(
           db,
@@ -102,7 +107,9 @@ const ToDoList = ({
   // ...other code
 
   const handleToggle = async (id, completed) => {
-    const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
+    const todoListId = `${date.getFullYear()}-${
+      date.getMonth() + 1
+    }-${date.getDate()}`;
     const taskIndex = todos.findIndex((task) => task.id === id);
 
     let movedTask;
@@ -297,10 +304,15 @@ const ToDoList = ({
   };
 
   const addTask = async (userId, task) => {
+    const todoListId = `${date.getFullYear()}-${
+      date.getMonth() + 1
+    }-${date.getDate()}`;
+
     const todosRef = collection(
       db,
-      `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`
+      `users/${userId}/todoLists/${todoListId}/todos/`
     );
+
     try {
       const docRef = await addDoc(todosRef, task);
       console.log("Document written with ID: ", docRef.id);
@@ -400,110 +412,108 @@ const ToDoList = ({
   };
 
   return (
-    <DragDropContext onDragEnd={handleOnDragEnd}>
-      <div className="ToDoList">
-        <div className="ToDoList-header">
-          <h1></h1>
-          <br />
-        </div>
-        <NewTaskForm onSubmit={handleNewTask} />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h3>Not yet done</h3>
+    <>
+      <NewTaskForm onSubmit={handleNewTask} />
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <div className="ToDoList">
           <div
             style={{
               display: "flex",
-              justifyContent: "flex-end",
+              justifyContent: "space-between",
               alignItems: "center",
             }}
           >
-            <button
-              style={{ backgroundColor: "transparent", marginRight: "0px" }}
+            <h3>Not yet done</h3>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              <BsVolumeUpFill size={30} />
-            </button>
-            <div style={{ width: 325 }}>
-              {" "}
-              {/* Slider Container */}
-              <StyledSlider
-                value={volume}
-                onChange={handleVolumeChange}
-                aria-labelledby="continuous-slider"
-              />
+              <button
+                style={{ backgroundColor: "transparent", marginRight: "0px" }}
+              >
+                <BsVolumeUpFill size={30} />
+              </button>
+              <div style={{ width: 325 }}>
+                {" "}
+                {/* Slider Container */}
+                <StyledSlider
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  aria-labelledby="continuous-slider"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <Droppable droppableId="todos">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {todos.map((todo, index) => (
-                <ToDoItem
-                  key={todo.id}
-                  handleUpdate={handleUpdate}
-                  index={index}
-                  id={todo.id}
-                  task={todo.task}
-                  complete={todo.complete}
-                  primaryDuration={todo.primaryDuration}
-                  secondaryDuration={todo.secondaryDuration}
-                  numCycles={todo.numCycles}
-                  onToggle={() => handleToggle(todo.id)}
-                  onDelete={() => handleDelete(todo.id)}
-                  tilDone={todo.tilDone}
-                  isRunning={todo.isRunning}
-                  setIsRunning={setIsRunning}
-                  runningTaskIndex={runningTaskIndex}
-                  setRunningTaskIndex={setRunningTaskIndex}
-                  isTaskInTodos={isTaskInTodos}
-                  draggableId={todo.id.toString()}
-                  volume={volume}
-                  order={todo.order}
-                  todos={todos}
-                  setTodos={setTodos}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-        <h3>Donzo</h3>
-        <Droppable droppableId="completedTodos">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {completedTodos.map((todo, index) => (
-                <ToDoItem
-                  key={todo.id}
-                  handleUpdate={handleUpdate}
-                  index={index}
-                  id={todo.id}
-                  task={todo.task}
-                  complete={todo.complete}
-                  primaryDuration={todo.primaryDuration}
-                  secondaryDuration={todo.secondaryDuration}
-                  numCycles={todo.numCycles}
-                  onToggle={() => handleToggle(todo.id, index)}
-                  onDelete={() => handleDelete(todo.id)}
-                  tilDone={todo.tilDone}
-                  isRunning={false}
-                  setIsRunning={setIsRunning}
-                  runningTaskIndex={runningTaskIndex}
-                  setRunningTaskIndex={setRunningTaskIndex}
-                  isTaskInTodos={isTaskInTodos}
-                  draggableId={todo.id.toString()}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </div>
-    </DragDropContext>
+          <Droppable droppableId="todos">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                {todos.map((todo, index) => (
+                  <ToDoItem
+                    key={todo.id}
+                    handleUpdate={handleUpdate}
+                    index={index}
+                    id={todo.id}
+                    task={todo.task}
+                    complete={todo.complete}
+                    primaryDuration={todo.primaryDuration}
+                    secondaryDuration={todo.secondaryDuration}
+                    numCycles={todo.numCycles}
+                    onToggle={() => handleToggle(todo.id)}
+                    onDelete={() => handleDelete(todo.id)}
+                    tilDone={todo.tilDone}
+                    isRunning={todo.isRunning}
+                    setIsRunning={setIsRunning}
+                    runningTaskIndex={runningTaskIndex}
+                    setRunningTaskIndex={setRunningTaskIndex}
+                    isTaskInTodos={isTaskInTodos}
+                    draggableId={todo.id.toString()}
+                    volume={volume}
+                    order={todo.order}
+                    todos={todos}
+                    setTodos={setTodos}
+                  />
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+          <h3>Donzo</h3>
+          <Droppable droppableId="completedTodos">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                {completedTodos.map((todo, index) => (
+                  <ToDoItem
+                    key={todo.id}
+                    handleUpdate={handleUpdate}
+                    index={index}
+                    id={todo.id}
+                    task={todo.task}
+                    complete={todo.complete}
+                    primaryDuration={todo.primaryDuration}
+                    secondaryDuration={todo.secondaryDuration}
+                    numCycles={todo.numCycles}
+                    onToggle={() => handleToggle(todo.id, index)}
+                    onDelete={() => handleDelete(todo.id)}
+                    tilDone={todo.tilDone}
+                    isRunning={false}
+                    setIsRunning={setIsRunning}
+                    runningTaskIndex={runningTaskIndex}
+                    setRunningTaskIndex={setRunningTaskIndex}
+                    isTaskInTodos={isTaskInTodos}
+                    draggableId={todo.id.toString()}
+                  />
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </div>
+      </DragDropContext>
+    </>
   );
 };
 

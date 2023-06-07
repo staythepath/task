@@ -15,7 +15,7 @@ const PriorityCard = ({ task, index }) => {
             margin: "10px",
             borderRadius: "4px",
             backdropFilter: "blur(10px)",
-            backgroundColor: snapshot.isDragging ? "#17135f48" : "#22222252", // this is how you use isDragging
+            backgroundColor: snapshot.isDragging ? "#44495054" : "#44495054", // this is how you use isDragging
             ...provided.draggableProps.style, // this should come last to allow the movement of the element
           }}
         >

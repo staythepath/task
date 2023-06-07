@@ -50,7 +50,10 @@ const ToDoRun = ({
 
   let userId = auth.currentUser.uid;
 
-  const todoListId = "your-todo-list-id";
+  const date = new Date();
+  const todoListId = `${date.getFullYear()}-${
+    date.getMonth() + 1
+  }-${date.getDate()}`;
 
   useEffect(() => {
     const fetchTodos = async () => {
@@ -70,7 +73,7 @@ const ToDoRun = ({
     };
 
     fetchTodos();
-  }, []);
+  }, [setTodos, todoListId, userId]);
 
   useEffect(() => {
     const fetchCompletedTodos = async () => {
@@ -86,7 +89,7 @@ const ToDoRun = ({
     };
 
     fetchCompletedTodos();
-  }, []);
+  }, [setCompletedTodos, todoListId, userId]);
 
   useEffect(() => {
     console.log("we are about to update firestore with", todos);
@@ -102,7 +105,10 @@ const ToDoRun = ({
   };
 
   const handleToggle = async (id, completed) => {
-    const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
+    const date = new Date();
+    const todoListId = `${date.getFullYear()}-${
+      date.getMonth() + 1
+    }-${date.getDate()}`;
     const taskIndex = todos.findIndex((task) => task.id === id);
 
     let movedTask;
@@ -292,7 +298,7 @@ const ToDoRun = ({
           style={{
             display: "flex",
             justifyContent: "center",
-            paddingTop: "20px",
+            paddingTop: "80px",
           }}
         >
           <button
@@ -305,7 +311,7 @@ const ToDoRun = ({
               backgroundColor:
                 runningTaskIndex !== -1 && todos[runningTaskIndex].isRunning
                   ? "#35dd02"
-                  : "",
+                  : "#66666667",
             }}
           >
             {runningTaskIndex !== -1 ? (
@@ -406,6 +412,7 @@ const ToDoRun = ({
                   onDelete={() => handleDelete(todo.id)}
                   tilDone={todo.tilDone}
                   isRunning={false}
+                  setIsRunning={setIsRunning}
                   runningTaskIndex={runningTaskIndex}
                   setRunningTaskIndex={setRunningTaskIndex}
                   isTaskInTodos={isTaskInTodos}

@@ -14,7 +14,10 @@ import { collection, updateDoc, doc, getDocs } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 
 function Prio({ todos, setTodos }) {
-  const todoListId = "your-todo-list-id";
+  const date = new Date();
+  const todoListId = `${date.getFullYear()}-${
+    date.getMonth() + 1
+  }-${date.getDate()}`;
 
   const [updateFirestore, setUpdateFirestore] = useState(false);
   const [data, setData] = useState({
@@ -59,7 +62,7 @@ function Prio({ todos, setTodos }) {
         db,
         `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`
       ),
-    []
+    [todoListId]
   );
 
   const fetchTasks = useCallback(async () => {

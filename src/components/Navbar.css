@@ -4,7 +4,11 @@
   display: flex;
   justify-content: space-between; /* Change from flex-start to space-between */
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 100%
+  );
   backdrop-filter: blur(10px);
   position: fixed;
   width: 100%;
@@ -111,7 +115,11 @@ span {
 }
 
 .nav-menu {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0) 0%,
+    transparent 100%
+  );
   backdrop-filter: blur(5px);
   width: 250px;
   height: 100vh;
@@ -133,4 +141,5 @@ span {
 
 .auth-button {
   margin-right: 2rem; /* when shown, slide in to 10px from the right */
+  background-color: #66666667;
 }

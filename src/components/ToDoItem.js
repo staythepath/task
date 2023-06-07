@@ -705,22 +705,38 @@ const ToDoItem = ({
               </>
             )}
 
-            <button
-              onClick={isEditing ? updateTask : toggleEdit}
-              className={
-                isRunning
-                  ? "isRunning-button"
-                  : "notRunning-button" /*"button-84" Use this for the other button*/
-              }
-              style={{
-                marginLeft: "1rem",
-                minWidth: "70px",
-                maxWidth: "70px",
-                textAlign: "center",
-              }}
-            >
-              {isEditing ? "Done" : "Edit"}
-            </button>
+            {isRunning ? (
+              <button
+                className={
+                  "notRunning-button" /*"button-84" Use this for the other button*/
+                }
+                style={{
+                  marginLeft: "1rem",
+                  minWidth: "70px",
+                  maxWidth: "70px",
+                  textAlign: "center",
+                }}
+              >
+                Edit
+              </button>
+            ) : (
+              <button
+                onClick={isEditing ? updateTask : toggleEdit}
+                className={
+                  isRunning
+                    ? "isRunning-button"
+                    : "notRunning-button" /*"button-84" Use this for the other button*/
+                }
+                style={{
+                  marginLeft: "1rem",
+                  minWidth: "70px",
+                  maxWidth: "70px",
+                  textAlign: "center",
+                }}
+              >
+                {isEditing ? "Done" : "Edit"}
+              </button>
+            )}
           </div>
         </li>
       )}

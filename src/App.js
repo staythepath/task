@@ -5,13 +5,15 @@ import Home from "./pages/Home";
 import Prio from "./pages/Prio";
 import ToDoRun from "./pages/ToDoRun";
 import Auth from "./components/Auth";
-//import Journals from "./pages/Journals";
+import Day from "./pages/Day";
+import Journals from "./pages/Journals";
 import Register from "./pages/Register";
 import CalendarPage from "./pages/Calendar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./config/firebase"; // import your Firebase config file
+import { DateContext } from "./DateContex";
 
 import "./App.css";
 
@@ -20,6 +22,7 @@ function App() {
   const [completedTodos, setCompletedTodos] = useState([]);
   const [isAuth, setIsAuth] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     let unsubscribeAuth = null;
@@ -58,90 +61,98 @@ function App() {
   };
 
   return (
-    <>
-      <Router>
-        <Navbar />
-        <div style={{ marginTop: "0px" }}>
-          <Routes>
-            <Route
-              path="/"
-              element={<Home todos={todos} setTodos={setTodos} />}
-            />
-            <Route
-              path="/ToDoList"
-              element={
-                isAuth ? (
-                  <ToDoList
-                    todos={todos}
-                    setTodos={setTodos}
-                    completedTodos={completedTodos}
-                    setCompletedTodos={setCompletedTodos}
-                    isRunning={isRunning}
-                    setIsRunning={setIsRunning.bind(this)}
-                  />
-                ) : (
-                  <Home />
-                )
-              }
-            />
-            <Route
-              path="/Prio"
-              element={
-                isAuth ? (
-                  <Prio
-                    todos={todos}
-                    setTodos={setTodos}
-                    completedTodos={completedTodos}
-                    setCompletedTodos={setCompletedTodos}
-                  />
-                ) : (
-                  <Home />
-                )
-              }
-            />
-            <Route
-              path="/ToDoRun"
-              element={
-                isAuth ? (
-                  <ToDoRun
-                    todos={todos}
-                    setTodos={setTodos}
-                    completedTodos={completedTodos}
-                    setCompletedTodos={setCompletedTodos}
-                    isRunning={isRunning}
-                    setIsRunning={setIsRunning}
-                  />
-                ) : (
-                  <Home />
-                )
-              }
-            />
-            {/*   <Route
-              path="/Journals"
-              element={
-                isAuth ? (
-                  <Journals todos={todos} setTodos={setTodos} />
-                ) : (
-                  <Home />
-                )
-              }
-            />
-          */}
+    <DateContext.Provider value={{ selectedDate, setSelectedDate }}>
+      <>
+        <Router>
+          <Navbar />
+          <div style={{ marginTop: "0px" }}>
+            <Routes>
+              <Route
+                path="/"
+                element={<Home todos={todos} setTodos={setTodos} />}
+              />
+              <Route
+                path="/ToDoList"
+                element={
+                  isAuth ? (
+                    <ToDoList
+                      todos={todos}
+                      setTodos={setTodos}
+                      completedTodos={completedTodos}
+                      setCompletedTodos={setCompletedTodos}
+                      isRunning={isRunning}
+                      setIsRunning={setIsRunning.bind(this)}
+                    />
+                  ) : (
+                    <Home />
+                  )
+                }
+              />
+              <Route
+                path="/Prio"
+                element={
+                  isAuth ? (
+                    <Prio
+                      todos={todos}
+                      setTodos={setTodos}
+                      completedTodos={completedTodos}
+                      setCompletedTodos={setCompletedTodos}
+                    />
+                  ) : (
+                    <Home />
+                  )
+                }
+              />
+              <Route
+                path="/ToDoRun"
+                element={
+                  isAuth ? (
+                    <ToDoRun
+                      todos={todos}
+                      setTodos={setTodos}
+                      completedTodos={completedTodos}
+                      setCompletedTodos={setCompletedTodos}
+                      isRunning={isRunning}
+                      setIsRunning={setIsRunning}
+                    />
+                  ) : (
+                    <Home />
+                  )
+                }
+              />
+              <Route
+                path="/Journals"
+                element={
+                  isAuth ? (
+                    <Journals todos={todos} setTodos={setTodos} />
+                  ) : (
+                    <Home />
+                  )
+                }
+              />
 
-            <Route
-              path="/Calendar"
-              element={
-                isAuth ? <CalendarPage user={auth.currentUser} /> : <Home />
-              }
-            />
-            <Route path="/Register" element={<Register />} />
-            <Route path="/Auth" element={<Auth />} />
-          </Routes>
-        </div>
-      </Router>
+              <Route
+                path="/Calendar"
+                element={
+                  isAuth ? <CalendarPage user={auth.currentUser} /> : <Home />
+                }
+              />
+              <Route
+                path="/day/:date"
+                element={
+                  isAuth ? <Day selectedDate={selectedDate} /> : <Home />
+                }
+              />
 
-      <div />
-    </>
+              <Route path="/Register" element={<Register />} />
+              <Route path="/Auth" element={<Auth />} />
+            </Routes>
+          </div>
+        </Router>
+
+        <div />
+      </>
+    </DateContext.Provider>
   );
 }
 

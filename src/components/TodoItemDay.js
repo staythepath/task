@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 
 const ToDoItemRun = ({
   id,
@@ -48,7 +48,6 @@ const ToDoItemRun = ({
 
   useEffect(() => {
     if (index === runningTaskIndex && isTaskInTodos) {
-      console.log("looking at setIsRunning", setIsRunning);
       setIsRunning(true);
     }
   }, [runningTaskIndex, index, tilDone, isTaskInTodos, id, setIsRunning]);
@@ -65,18 +64,6 @@ const ToDoItemRun = ({
 
     return () => clearInterval(timer);
   }, [isRunning, tilDone]);
-
-  const playBell = useCallback(
-    (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    },
-    [volume]
-  );
 
   useEffect(() => {
     let timer;
@@ -123,7 +110,6 @@ const ToDoItemRun = ({
         (isPrimary ? primaryDuration : secondaryDuration) === 0
       ) {
         clearInterval(timer);
-        playBell();
         if (isPrimary) {
           setIsPrimary(false);
           setTimeLeft(secondaryDuration);
@@ -150,10 +136,10 @@ const ToDoItemRun = ({
         }
       }
     }
+
     return () => clearInterval(timer);
   }, [
     isRunning,
-    setIsRunning,
     primaryDuration,
     secondaryDuration,
     isPrimary,
@@ -169,8 +155,7 @@ const ToDoItemRun = ({
     setRunningTaskIndex,
     isTaskInTodos,
     volume,
-
-    playBell,
+    setIsRunning,
   ]);
 
   const crossedOutStyle = {
@@ -178,49 +163,15 @@ const ToDoItemRun = ({
     opacity: 0.5,
   };
 
+  const countdownDisplayStyle = {
+    width: "2.5rem",
+    textAlign: "center",
+    paddingRight: "24rem",
+  };
+
   return (
     <div className="task-container-">
-      <li className={isRunning ? "isRunning" : "task"}>
-        <label
-          className={
-            isRunning ? "isRunning-checkbox-container" : "checkbox-container"
-          }
-        >
-          {isRunning && tilDone ? (
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  id,
-                  index,
-                  task,
-                  complete: !complete,
-                  primaryDuration,
-                  secondaryDuration,
-                  numCycles,
-                  tilDone,
-                  isRunning: false,
-                };
-                handleUpdate(updatedTask);
-                onToggle(id, !complete);
-              }}
-            />
-          ) : (
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  isRunning: false,
-                };
-                handleUpdate(updatedTask);
-              }}
-            />
-          )}
-          <span className="checkbox"></span>
-        </label>
-
+      <li className={"task"}>
         <span style={complete ? crossedOutStyle : { marginRight: "1rem" }}>
           {task}
         </span>
@@ -264,20 +215,21 @@ const ToDoItemRun = ({
                 }}
               />
             ) : (
-              <input
-                type="text"
-                value={`${Math.floor(timeLeft / 60)}:${String(
-                  timeLeft % 60
-                ).padStart(2, "0")}`}
-                readOnly
-                className={isRunning ? "isRunningCountdown" : ""}
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginLeft: ".5rem",
-                  marginRight: "1rem",
-                }}
-              />
+              <div style={countdownDisplayStyle}>
+                <input
+                  type="text"
+                  value={
+                    ((primaryDuration + secondaryDuration) * numCycles) / 60 +
+                    ":00"
+                  }
+                  readOnly
+                  style={{
+                    width: "100%",
+                    textAlign: "center",
+                    marginLeft: ".5rem",
+                  }}
+                />
+              </div>
             )}
           </div>
         </div>
