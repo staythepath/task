@@ -77,7 +77,16 @@ const Day = () => {
 
   return (
     <div className="outer-div">
-      <h2>{selectedDate.toDateString()}</h2>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <h2>{selectedDate.toDateString()}</h2>
+        <h2>{journals.length ? "Day Complete!" : "Day Incomplete"}</h2>
+      </div>
       <h3>Incomplete Tasks</h3>
       {tasks.map((task, index) => (
         <ToDoItemDay
@@ -101,7 +110,20 @@ const Day = () => {
           journal,
           index // Change this line
         ) => (
-          <p key={index}>{journal.Entry}</p> // Change this line, assuming "Entry" is the journal entry text
+          <pre
+            key={index}
+            style={{
+              margin: "1px",
+              fontSize: "16px",
+              textAlign: "left",
+              whiteSpace: "pre-wrap",
+              wordWrap: "break-word",
+              width: "70%", // Adjust to your desired width
+            }}
+          >
+            {journal.Entry}
+          </pre>
+          // Change this line, assuming "Entry" is the journal entry text
         )
       )}
     </div>

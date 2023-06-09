@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import { auth } from "../config/firebase";
 
-const ToDoItem = ({
+const TodoItemTom = ({
   id,
   index,
   task,
@@ -301,33 +301,6 @@ const ToDoItem = ({
           }
           //        className={ isRunning ? { isEditing ? 'isRunning-isEditingTask' : "isRunning-task"} : {isEditing ? "editing-task" : "task"}}
         >
-          <label
-            className={
-              isRunning ? "isRunning-checkbox-container" : "checkbox-container"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  id,
-                  index,
-                  task,
-                  complete: !complete,
-                  primaryDuration,
-                  secondaryDuration,
-                  numCycles,
-                  tilDone,
-                  isRunning: false,
-                };
-                handleUpdate(userId, updatedTask);
-                onToggle(id, !complete);
-              }}
-            />
-            <span className="checkbox"></span>
-          </label>
-
           {isEditing ? (
             <input
               type="text"
@@ -351,14 +324,20 @@ const ToDoItem = ({
               style={{
                 marginLeft: "20px",
                 marginRight: "15px",
-
+                textAlign: "left",
                 minWidth: "2rem",
                 backgroundColor: isRunning ? "#abf296" : "#66666667",
                 color: isRunning ? "#227f08" : "",
               }}
             />
           ) : (
-            <span style={complete ? crossedOutStyle : { marginRight: "1rem" }}>
+            <span
+              style={
+                complete
+                  ? crossedOutStyle
+                  : { marginRight: "1rem", textAlign: "left" }
+              }
+            >
               {task}
             </span>
           )}
@@ -674,25 +653,6 @@ const ToDoItem = ({
 
             {!isEditing && (
               <>
-                {!complete && (
-                  <button
-                    onClick={toggleTimer}
-                    className={
-                      isRunning ? "isRunning-button" : "notRunning-button"
-                    }
-                  >
-                    {isRunning ? "Pause" : "Start"}
-                  </button>
-                )}
-                <button
-                  onClick={resetTimer}
-                  style={{ marginLeft: "1rem" }}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  Reset
-                </button>
                 <button
                   onClick={onDelete}
                   style={{ marginLeft: "1rem" }}
@@ -742,4 +702,4 @@ const ToDoItem = ({
   );
 };
 
-export default ToDoItem;
+export default TodoItemTom;

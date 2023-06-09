@@ -9,16 +9,25 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
 
-function Journal() {
+import { useAuthState } from "react-firebase-hooks/auth";
+import TomTodoList from "../components/TomTodoList";
+
+function Journal({ todos, setTodos }) {
   const [journals, setJournals] = useState([]);
   const [newEntry, setNewEntry] = useState("");
   const [newComplete, setNewComplete] = useState(false);
   const [updatedEntry, setUpdatedEntry] = useState("");
+  const [editMode, setEditMode] = useState(false);
   const [user] = useAuthState(auth);
 
   const date = new Date();
+
+  const today = `${date.getFullYear()}-${
+    date.getMonth() + 1
+  }-${date.getDate()}`;
+
+  const todaysEntry = journals.find((journal) => journal.date === today);
 
   const generateDocId = () => {
     const formattedDate = `${date.getFullYear()}-${
@@ -42,6 +51,7 @@ function Journal() {
       setNewEntry("");
       setNewComplete(false);
       getJournals();
+      setEditMode(false);
     } catch (err) {
       console.error(err);
     }
@@ -75,67 +85,140 @@ function Journal() {
   const updateEntry = async (id) => {
     const entryDoc = doc(db, "users", user.uid, "journals", id);
     await updateDoc(entryDoc, { Entry: updatedEntry });
+    setEditMode(false); // Add this line
     getJournals();
   };
 
   return (
-    <div className="Journal">
+    <div className="ToDoList">
       <div className="ToDoList-header" style={{ paddingTop: "80px" }}>
-        <h1> </h1>
+        <h1> Write a bit about today and set tasks for tomorrow! </h1>
         <br />
       </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          margin: "10px",
-        }}
-      >
-        <input
-          placeholder="Entry..."
-          value={newEntry}
-          onChange={(e) => setNewEntry(e.target.value)}
-        />
-        <input
-          type="checkbox"
-          checked={newComplete}
-          onChange={(e) => setNewComplete(e.target.checked)}
-        />
-        <label>Complete?</label>
-        <button onClick={onSubmitEntry}>Submit</button>
-      </div>
-      <div>
-        {journals.map((journal) => (
+
+      <TomTodoList todos={todos} setTodos={setTodos} />
+
+      {todaysEntry ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "10px",
+            width: "100%",
+          }}
+        >
+          {!editMode ? (
+            <>
+              <pre
+                style={{
+                  margin: "1px",
+                  fontSize: "16px",
+                  textAlign: "left",
+                  whiteSpace: "pre-wrap",
+                  wordWrap: "break-word",
+
+                  width: "70%", // Adjust to your desired width
+                }}
+              >
+                {todaysEntry.Entry}
+              </pre>
+              <button
+                onClick={() => {
+                  setEditMode(true);
+                  setUpdatedEntry(todaysEntry.Entry);
+                }}
+                style={{ margin: "10px" }}
+              >
+                Edit Entry
+              </button>
+            </>
+          ) : (
+            <>
+              <textarea
+                rows="5"
+                placeholder="Entry..."
+                className="textera-box"
+                value={updatedEntry} // The value is the state that changes when we set the updated entry
+                onChange={(e) => setUpdatedEntry(e.target.value)}
+                style={{ width: "70%", fontSize: "16px" }} // Adjust to your desired width
+              />
+              <div>
+                <button
+                  onClick={() => updateEntry(todaysEntry.id)}
+                  disabled={updatedEntry.length < 150} // Disable button if character count is less than 280
+                  style={{
+                    margin: "10px",
+                    backgroundColor:
+                      updatedEntry.length >= 150 ? "#131225" : "#6666661e",
+                  }}
+                >
+                  Mark Day Complete!
+                </button>
+                <button
+                  style={{
+                    margin: "10px",
+                  }}
+                  onClick={() => deleteEntry(todaysEntry.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "10px",
+
+            width: "100%",
+          }}
+        >
+          <textarea
+            rows="5"
+            placeholder="Entry..."
+            className="textera-box"
+            value={newEntry}
+            onChange={(e) => setNewEntry(e.target.value)}
+            style={{ width: "70%", fontSize: "16px" }} // Adjust to your desired width
+          />
+          <button
+            onClick={onSubmitEntry}
+            disabled={newEntry.length < 150} // Disable button if character count is less than 280
+            style={{
+              margin: "10px",
+              backgroundColor: newEntry.length >= 150 ? "#131225" : "#6666661e",
+            }}
+          >
+            Mark Day Complete!
+          </button>
+        </div>
+      )}
+
+      {journals
+        .filter((journal) => journal.date !== today)
+        .map((journal) => (
           <div style={{ textAlign: "center", padding: "10px" }}>
-            <div
+            <pre
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                margin: "1px",
+                fontSize: "16px",
+                textAlign: "left",
+                whiteSpace: "pre-wrap",
+                wordWrap: "break-word",
+                width: "70%", // Adjust to your desired width
               }}
             >
-              {journal.currentTime?.toDate().toLocaleString()}
-              <h3 style={{ marginLeft: "10px" }}>Complete?</h3>
-              <input type="checkbox" checked={journal.Complete} disabled />
-            </div>
-            <p style={{ margin: "1px" }}>{journal.Entry}</p>
-            <div>
-              <input
-                placeholder="Edit Entry..."
-                onChange={(e) => setUpdatedEntry(e.target.value)}
-              />
-              <button onClick={(e) => updateEntry(journal.id)}>Submit</button>
-            </div>
-            <button
-              style={{ margin: "10px" }}
-              onClick={() => deleteEntry(journal.id)}
-            >
-              Delete Entry
-            </button>
+              {journal.Entry}
+            </pre>
           </div>
         ))}
-      </div>
     </div>
   );
 }

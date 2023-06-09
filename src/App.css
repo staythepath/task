@@ -112,6 +112,16 @@ input[type="text"] {
   color: #ccc;
 }
 
+.textera-box {
+  padding: 0.5rem;
+  font-size: 1rem;
+  flex-grow: 1;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: #66666667;
+  color: #ccc;
+}
+
 .styles {
   bmBurderButton {
     position: fixed;
@@ -705,4 +715,29 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
   text-align: center;
   outline: none; /* Remove outline */
   moz-appearance: textfield;
+}
+
+@media (max-width: 768px) {
+  .ToDoList {
+    align-items: center;
+  }
+
+  .task {
+    min-width: 100%;
+  }
+
+  .notRunning-button {
+    background-color: #66666667;
+    color: #c0c0c0;
+    border-style: hidden;
+    border-color: #000000;
+    text-align: center; /* centers text horizontally */
+    font-size: small;
+    margin-left: 1rem;
+    width: auto;
+    display: flex; /* enables flexbox layout */
+    justify-content: center; /* centers content horizontally in flexbox */
+    align-items: center; /* centers content vertically in flexbox */
+    height: 45px; /* specify a height to ensure the text is centered vertically */
+  }
 }

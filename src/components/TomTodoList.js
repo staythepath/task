@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
-import ToDoItem from "../components/ToDoItem";
-import NewTaskForm from "../components/NewTaskForm";
+import TodoItemTom from "./TodoItemTom";
+import NewTaskForm from "./NewTaskForm";
 import { BsVolumeUpFill } from "react-icons/bs";
 import { auth, db } from "../config/firebase";
 import {
@@ -38,10 +38,16 @@ const StyledSlider = styled(Slider)({
   },
 });
 
+const tomorrow = (() => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return date;
+})();
+
 const date = new Date();
-const todoListId = `${date.getFullYear()}-${
-  date.getMonth() + 1
-}-${date.getDate()}`;
+const todoListId = `${tomorrow.getFullYear()}-${
+  tomorrow.getMonth() + 1
+}-${tomorrow.getDate()}`;
 
 const ToDoList = ({
   todos,
@@ -54,6 +60,12 @@ const ToDoList = ({
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(20);
   const [user, setUser] = useState({ role: "guest" }); // Default user state
+
+  const tomorrow = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date;
+  }, []);
 
   useEffect(() => {
     // This observer returns the current user if there's one logged in.
@@ -75,21 +87,16 @@ const ToDoList = ({
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
-        const todoListId = `${date.getFullYear()}-${
-          date.getMonth() + 1
-        }-${date.getDate()}`;
+        const todoListId = `${tomorrow.getFullYear()}-${
+          tomorrow.getMonth() + 1
+        }-${tomorrow.getDate()}`;
 
         const todosRef = collection(
           db,
           `users/${user.uid}/todoLists/${todoListId}/todos`
         );
-        const completedTodosRef = collection(
-          db,
-          `users/${user.uid}/todoLists/${todoListId}/completedTodos`
-        );
 
         const todosQuery = query(todosRef, orderBy("order"));
-        const completedTodosQuery = query(completedTodosRef, orderBy("order"));
 
         const unsubscribeTodos = onSnapshot(todosQuery, (snapshot) => {
           const userTodos = snapshot.docs.map((doc) => ({
@@ -99,21 +106,9 @@ const ToDoList = ({
           setTodos(userTodos);
         });
 
-        const unsubscribeCompletedTodos = onSnapshot(
-          completedTodosQuery,
-          (snapshot) => {
-            const userCompletedTodos = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-            setCompletedTodos(userCompletedTodos);
-          }
-        );
-
         // Return cleanup function for Firestore listeners
         return () => {
           unsubscribeTodos();
-          unsubscribeCompletedTodos();
         };
       } else {
         // If no user is logged in, then load the data from local storage
@@ -130,12 +125,12 @@ const ToDoList = ({
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, [setTodos, setCompletedTodos]);
+  }, [setTodos, setCompletedTodos, tomorrow]);
 
   const handleToggle = async (id, completed) => {
-    const todoListId = `${date.getFullYear()}-${
-      date.getMonth() + 1
-    }-${date.getDate()}`;
+    const todoListId = `${tomorrow.getFullYear()}-${
+      tomorrow.getMonth() + 1
+    }-${tomorrow.getDate()}`;
     const taskIndex = todos.findIndex((task) => task.id === id);
 
     let movedTask;
@@ -332,9 +327,9 @@ const ToDoList = ({
   };
 
   const addTask = async (userId, task) => {
-    const todoListId = `${date.getFullYear()}-${
-      date.getMonth() + 1
-    }-${date.getDate()}`;
+    const todoListId = `${tomorrow.getFullYear()}-${
+      tomorrow.getMonth() + 1
+    }-${tomorrow.getDate()}`;
 
     if (userId) {
       const todosRef = collection(
@@ -463,7 +458,7 @@ const ToDoList = ({
               alignItems: "center",
             }}
           >
-            <h3>Not yet done</h3>
+            <h3>Tasks for tomorrow</h3>
             <div
               style={{
                 display: "flex",
@@ -490,7 +485,7 @@ const ToDoList = ({
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
                 {todos.map((todo, index) => (
-                  <ToDoItem
+                  <TodoItemTom
                     key={todo.id}
                     handleUpdate={handleUpdate}
                     index={index}
@@ -513,36 +508,6 @@ const ToDoList = ({
                     order={todo.order}
                     todos={todos}
                     setTodos={setTodos}
-                  />
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-          <h3>Donzo</h3>
-          <Droppable droppableId="completedTodos">
-            {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef}>
-                {completedTodos.map((todo, index) => (
-                  <ToDoItem
-                    key={todo.id}
-                    handleUpdate={handleUpdate}
-                    index={index}
-                    id={todo.id}
-                    task={todo.task}
-                    complete={todo.complete}
-                    primaryDuration={todo.primaryDuration}
-                    secondaryDuration={todo.secondaryDuration}
-                    numCycles={todo.numCycles}
-                    onToggle={() => handleToggle(todo.id, index)}
-                    onDelete={() => handleDelete(todo.id)}
-                    tilDone={todo.tilDone}
-                    isRunning={false}
-                    setIsRunning={setIsRunning}
-                    runningTaskIndex={runningTaskIndex}
-                    setRunningTaskIndex={setRunningTaskIndex}
-                    isTaskInTodos={isTaskInTodos}
-                    draggableId={todo.id.toString()}
                   />
                 ))}
                 {provided.placeholder}
