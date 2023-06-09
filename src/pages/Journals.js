@@ -138,20 +138,22 @@ function Journal({ todos, setTodos }) {
             <>
               <textarea
                 rows="5"
-                placeholder="Entry..."
+                placeholder="You need to add at least one task and write 150 characters to be able to mark the day as complete. You can cheat if you want, but you're just cheating yourself. This text you are reading is over 200 characters. I think you can squeeze out 150."
                 className="textera-box"
                 value={updatedEntry} // The value is the state that changes when we set the updated entry
                 onChange={(e) => setUpdatedEntry(e.target.value)}
-                style={{ width: "70%", fontSize: "16px" }} // Adjust to your desired width
+                style={{ width: "70%", fontSize: "16px", borderRadios: "10px" }} // Adjust to your desired width
               />
               <div>
                 <button
                   onClick={() => updateEntry(todaysEntry.id)}
-                  disabled={updatedEntry.length < 150} // Disable button if character count is less than 280
+                  disabled={updatedEntry.length < 150 || todos.length === 0} // Disable button if character count is less than 280 or there are no todos
                   style={{
                     margin: "10px",
                     backgroundColor:
-                      updatedEntry.length >= 150 ? "#131225" : "#6666661e",
+                      updatedEntry.length >= 150 && todos.length > 0
+                        ? "#131225"
+                        : "#6666661e",
                   }}
                 >
                   Mark Day Complete!
@@ -182,43 +184,27 @@ function Journal({ todos, setTodos }) {
         >
           <textarea
             rows="5"
-            placeholder="Entry..."
+            placeholder="You need to add at least one task and write 150 characters to be able to mark the day as complete. You can cheat if you want, but you're just cheating yourself. This text you are reading is over 200 characters. I think you can squeeze out 150."
             className="textera-box"
             value={newEntry}
             onChange={(e) => setNewEntry(e.target.value)}
-            style={{ width: "70%", fontSize: "16px" }} // Adjust to your desired width
+            style={{ width: "70%", fontSize: "16px", borderRadios: "10px" }} // Adjust to your desired width
           />
           <button
             onClick={onSubmitEntry}
-            disabled={newEntry.length < 150} // Disable button if character count is less than 280
+            disabled={newEntry.length < 150 || todos.length === 0} // Disable button if character count is less than 280 or there are no todos
             style={{
               margin: "10px",
-              backgroundColor: newEntry.length >= 150 ? "#131225" : "#6666661e",
+              backgroundColor:
+                newEntry.length >= 150 && todos.length > 0
+                  ? "#131225"
+                  : "#6666661e",
             }}
           >
             Mark Day Complete!
           </button>
         </div>
       )}
-
-      {journals
-        .filter((journal) => journal.date !== today)
-        .map((journal) => (
-          <div style={{ textAlign: "center", padding: "10px" }}>
-            <pre
-              style={{
-                margin: "1px",
-                fontSize: "16px",
-                textAlign: "left",
-                whiteSpace: "pre-wrap",
-                wordWrap: "break-word",
-                width: "70%", // Adjust to your desired width
-              }}
-            >
-              {journal.Entry}
-            </pre>
-          </div>
-        ))}
     </div>
   );
 }
