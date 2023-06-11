@@ -40,7 +40,7 @@ const ToDoItem = ({
   const [numCycles, setNumCycles] = useState(initialNumCycles);
   const timeoutId = useRef(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const userId = auth.currentUser.uid;
+  const userId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);

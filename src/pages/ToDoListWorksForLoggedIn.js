@@ -56,7 +56,6 @@ const ToDoList = ({
   const [volume, setVolume] = useState(20);
   const [user, setUser] = useState({ role: "guest" }); // Default user state
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authUser) => {
@@ -87,10 +86,6 @@ const ToDoList = ({
     [currentUser, todoListId]
   );
 
-  useEffect(() => {
-    console.log("Here are the todos after they've been updated", todos);
-  }, [todos]);
-
   // Separate useEffect for initial data fetching
   const fetchTasks = useCallback(async () => {
     const user = auth.currentUser;
@@ -113,7 +108,6 @@ const ToDoList = ({
         .sort((a, b) => a.order - b.order); // sort tasks by order
 
       // Update todos
-
       setTodos(tasksData);
       console.log("Fetch Tasks Ran");
       console.log("Here is task data: ", tasksData);
@@ -127,43 +121,27 @@ const ToDoList = ({
       // Return the tasks
       return tasks;
     } else {
-      setTimeout(async () => {
-        // If no user is logged in, load the data from local storage
-        const localStorageTodos = localStorage.getItem("todos");
-        const localStorageCompletedTodos =
-          localStorage.getItem("completedTodos");
+      // If no user is logged in, load the data from local storage
+      const localStorageTodos = localStorage.getItem("todos");
+      const localStorageCompletedTodos = localStorage.getItem("completedTodos");
 
-        if (localStorageTodos) {
-          const tasksData = JSON.parse(localStorageTodos);
+      if (localStorageTodos && localStorageCompletedTodos) {
+        const tasksData = JSON.parse(localStorageTodos);
+        setTodos(tasksData);
 
-          const tasks = {};
-          tasksData.forEach((task) => {
-            tasks[task.id] = task;
-          });
+        const tasks = {};
+        tasksData.forEach((task) => {
+          tasks[task.id] = task;
+        });
 
-          console.log("Here is tasksData before the setTodos", tasksData);
-          console.log(
-            "Here is setTodos before it's set in fetchTasks!!!!!!!!!!",
-            todos
-          );
-          await setTodos(tasksData);
-          console.log("Here are the todos after the setTodos", todos);
-          console.log("Here is tasksData after the setTodos", tasksData);
-          console.log("Fetch Tasks Else If Ran");
-
-          if (localStorageCompletedTodos) {
-            const completedTasksData = JSON.parse(localStorageCompletedTodos);
-            await setCompletedTodos(completedTasksData);
-          }
-
-          return tasks;
-        }
-      }, 1); // 1000ms delay = 1 second
+        return tasks;
+      }
     }
-  }, [setTodos, setCompletedTodos]);
+  }, [setTodos]);
 
   useEffect(() => {
-    if (currentUser && !loading) {
+    // Fetch tasks from Firestore or local storage
+    if (currentUser) {
       const todoListId = `${date.getFullYear()}-${
         date.getMonth() + 1
       }-${date.getDate()}`;
@@ -174,12 +152,10 @@ const ToDoList = ({
       );
 
       const unsubscribeTodos = onSnapshot(todosRef, (snapshot) => {
-        const userTodos = snapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .sort((a, b) => a.order - b.order);
+        const userTodos = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setTodos(userTodos);
         console.log("this is the userTodos from the useEffect hook", userTodos);
       });
@@ -189,7 +165,7 @@ const ToDoList = ({
     } else {
       fetchTasks();
     }
-  }, [fetchTasks, currentUser, loading]);
+  }, [fetchTasks, currentUser]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -241,13 +217,20 @@ const ToDoList = ({
         };
       } else {
         // If no user is logged in, then load the data from local storage
-        fetchTasks();
+        const localStorageTodos = localStorage.getItem("todos");
+        const localStorageCompletedTodos =
+          localStorage.getItem("completedTodos");
+
+        if (localStorageTodos && localStorageCompletedTodos) {
+          setTodos(JSON.parse(localStorageTodos));
+          setCompletedTodos(JSON.parse(localStorageCompletedTodos));
+        }
       }
     });
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, [fetchTasks]);
+  }, [setTodos, setCompletedTodos]);
 
   // ...other code///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////
@@ -255,7 +238,6 @@ const ToDoList = ({
   //////
 
   const handleToggle = async (id, completed) => {
-    console.log("this is setTodos from the HTTTTTTTTTTT");
     const todoListId = `${date.getFullYear()}-${
       date.getMonth() + 1
     }-${date.getDate()}`;
@@ -483,43 +465,37 @@ const ToDoList = ({
     );
     setCompletedTodos(newCompletedTodos);
 
-    if (user && user.role !== "guest") {
-      const collectionPath = isTaskInTodos(updatedTask.id)
-        ? "todos"
-        : "completedTodos";
+    const collectionPath = isTaskInTodos(updatedTask.id)
+      ? "todos"
+      : "completedTodos";
 
-      const taskRef = doc(
-        db,
-        `users/${userId}/todoLists/${todoListId}/${collectionPath}/${updatedTask.id}`
-      );
+    const taskRef = doc(
+      db,
+      `users/${userId}/todoLists/${todoListId}/${collectionPath}/${updatedTask.id}`
+    );
 
-      // Create an object of fields to update, excluding any that are undefined
-      const fieldsToUpdate = [
-        "task",
-        "complete",
-        "primaryDuration",
-        "secondaryDuration",
-        "numCycles",
-        "tilDone",
-        "isRunning",
-        "order",
-      ].reduce((acc, curr) => {
-        if (updatedTask[curr] !== undefined) {
-          acc[curr] = updatedTask[curr];
-        }
-        return acc;
-      }, {});
-
-      try {
-        await updateDoc(taskRef, fieldsToUpdate);
-        console.log("Document updated successfully in Firestore");
-      } catch (e) {
-        console.error("Error updating document in Firestore: ", e);
+    // Create an object of fields to update, excluding any that are undefined
+    const fieldsToUpdate = [
+      "task",
+      "complete",
+      "primaryDuration",
+      "secondaryDuration",
+      "numCycles",
+      "tilDone",
+      "isRunning",
+      "order",
+    ].reduce((acc, curr) => {
+      if (updatedTask[curr] !== undefined) {
+        acc[curr] = updatedTask[curr];
       }
-    } else {
-      // If no user is authenticated, update the state and local storage directly
-      localStorage.setItem("todos", JSON.stringify(newTodos));
-      localStorage.setItem("completedTodos", JSON.stringify(newCompletedTodos));
+      return acc;
+    }, {});
+
+    try {
+      await updateDoc(taskRef, fieldsToUpdate);
+      console.log("Document updated successfully in Firestore");
+    } catch (e) {
+      console.error("Error updating document in Firestore: ", e);
     }
   };
 
@@ -550,8 +526,6 @@ const ToDoList = ({
 
       setTodos(updatedTodos); // Update the state
       localStorage.setItem("todos", JSON.stringify(updatedTodos)); // Store the updated state in local storage
-      console.log("These are the todos added to local storage ", todos);
-      console.log("here is local storage", localStorage);
 
       return Promise.resolve({ id: newId }); // Return a resolved promise with the new ID
     }
@@ -596,9 +570,19 @@ const ToDoList = ({
       });
   };
 
-  const handleOnDragEnd = async (result) => {
-    // No destination: user dragged outside the list
-    if (!result.destination) {
+  const handleOnDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const sourceId = result.source.droppableId;
+    const destinationId = result.destination.droppableId;
+
+    // Do not allow moving tasks from completedTodos to todos, and vice versa.
+    if (sourceId !== destinationId) {
+      return;
+    }
+
+    if (sourceId === "completedTodos") {
+      // Don't allow rearranging tasks within completedTodos.
       return;
     }
 
@@ -606,28 +590,35 @@ const ToDoList = ({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
+    // Update local state immediately
     setTodos(items);
 
-    if (currentUser) {
-      setLoading(true);
-
-      const todoListId = `${date.getFullYear()}-${
-        date.getMonth() + 1
-      }-${date.getDate()}`;
-
-      // Update Firestore in the background
-      await Promise.all(
-        items.map((todo, index) => {
-          const docRef = doc(
-            db,
-            `users/${currentUser.uid}/todoLists/${todoListId}/todos/`,
-            todo.id
-          );
-          return updateDoc(docRef, { order: index });
-        })
+    // Update Firestore in the background
+    items.forEach((todo, index) => {
+      const docRef = doc(
+        db,
+        `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`,
+        todo.id
       );
+      updateDoc(docRef, { order: index });
+    });
 
-      setLoading(false);
+    // If the running task is the one we moved, update the runningTaskIndex
+    if (runningTaskIndex === result.source.index) {
+      setRunningTaskIndex(result.destination.index);
+    } else {
+      // If the running task was not the one we moved but it was affected by the rearrangement, update its index accordingly
+      if (
+        result.destination.index <= runningTaskIndex &&
+        result.source.index > runningTaskIndex
+      ) {
+        setRunningTaskIndex(runningTaskIndex + 1);
+      } else if (
+        result.destination.index >= runningTaskIndex &&
+        result.source.index < runningTaskIndex
+      ) {
+        setRunningTaskIndex(runningTaskIndex - 1);
+      }
     }
   };
 

@@ -363,6 +363,7 @@ span {
   position: relative;
   padding-left: 35px;
   margin-bottom: 23px;
+  padding-right: 20;
   cursor: pointer;
   font-size: 22px;
   -webkit-user-select: none;
