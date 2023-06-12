@@ -51,8 +51,9 @@ const ToDoList = ({
   setCompletedTodos,
   isRunning,
   setIsRunning,
+  runningTaskIndex,
+  setRunningTaskIndex,
 }) => {
-  const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(20);
   const [user, setUser] = useState({ role: "guest" }); // Default user state
   const [currentUser, setCurrentUser] = useState(null);
@@ -281,6 +282,25 @@ const ToDoList = ({
 
   useEffect(() => {
     if (currentUser) {
+      // Create a new Date object for the current date/time
+      let now = new Date();
+
+      // Create a new Date object for midnight tonight
+      let midnight = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0,
+        0,
+        0
+      );
+
+      // Calculate the difference in milliseconds
+      let timeToMidnight = midnight.getTime() - now.getTime();
+
+      // Calculate the difference in seconds
+      let timeToMidnightInSeconds = timeToMidnight / 1000;
+
       const endTaskId = "end";
       const endTaskRef = doc(
         db,
@@ -300,7 +320,7 @@ const ToDoList = ({
         isSpecial: true,
         numCycles: 1,
         order: specialOrder,
-        primaryDuration: 120,
+        primaryDuration: timeToMidnightInSeconds,
         secondaryDuration: 0,
         tilDone: false,
         user: currentUser.uid,

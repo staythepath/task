@@ -23,6 +23,7 @@ function App() {
   const [isAuth, setIsAuth] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
   useEffect(() => {
     let unsubscribeAuth = null;
@@ -81,6 +82,8 @@ function App() {
                     setCompletedTodos={setCompletedTodos}
                     isRunning={isRunning}
                     setIsRunning={setIsRunning.bind(this)}
+                    runningTaskIndex={runningTaskIndex}
+                    setRunningTaskIndex={setRunningTaskIndex.bind(this)}
                   />
                 }
               />
