@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
@@ -75,18 +75,6 @@ const ToDoList = ({
     return () => unsubscribe();
   }, []);
 
-  // Create a memoized todosRef
-  const todosRef = useMemo(
-    () =>
-      currentUser
-        ? collection(
-            db,
-            `users/${currentUser.uid}/todoLists/${todoListId}/todos/`
-          )
-        : null, // You could provide a default value here if necessary
-    [currentUser, todoListId]
-  );
-
   useEffect(() => {
     console.log("Here are the todos after they've been updated", todos);
   }, [todos]);
@@ -160,7 +148,7 @@ const ToDoList = ({
         }
       }, 1); // 1000ms delay = 1 second
     }
-  }, [setTodos, setCompletedTodos]);
+  }, [setCompletedTodos]);
 
   useEffect(() => {
     if (currentUser && !loading) {
@@ -189,7 +177,7 @@ const ToDoList = ({
     } else {
       fetchTasks();
     }
-  }, [fetchTasks, currentUser, loading]);
+  }, [fetchTasks, currentUser, loading, setTodos]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -247,15 +235,91 @@ const ToDoList = ({
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, [fetchTasks]);
+  }, [fetchTasks, setCompletedTodos, setTodos]);
 
-  // ...other code///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////
-  //////////////////////
-  //////
+  useEffect(() => {
+    if (currentUser) {
+      const startTaskId = "start";
+      const startTaskRef = doc(
+        db,
+        `users/${currentUser.uid}/todoLists/${todoListId}/todos/${startTaskId}`
+      );
+
+      const specialOrder = -1;
+
+      const startTask = {
+        id: startTaskId,
+        task: "Visualize yourself doing all the steps of each task.",
+        complete: false,
+        place: "start",
+        column: "column-1",
+        isRunning: false,
+        isSpecial: true,
+        numCycles: 1,
+        order: specialOrder,
+        primaryDuration: 60,
+        secondaryDuration: 0,
+        tilDone: false,
+        user: currentUser.uid,
+      };
+
+      const addSpecialTaskToFirebase = async () => {
+        await setDoc(startTaskRef, startTask);
+      };
+
+      const startTaskExists = [...todos, ...completedTodos].some(
+        (task) => task.id === startTask.id
+      );
+
+      if (!startTaskExists) {
+        setTodos((prevTodos) => [startTask, ...prevTodos]);
+        addSpecialTaskToFirebase();
+      }
+    }
+  }, [currentUser, todos, completedTodos, todoListId, db]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const endTaskId = "end";
+      const endTaskRef = doc(
+        db,
+        `users/${currentUser.uid}/todoLists/${todoListId}/todos/${endTaskId}`
+      );
+
+      const specialOrder = 999;
+
+      const endTask = {
+        id: endTaskId,
+        task: "Go to the journals page and complete the day.",
+        complete: false,
+        place: "end",
+        column: "column-1",
+        isRunning: false,
+        isSpecial: true,
+        numCycles: 1,
+        order: specialOrder,
+        primaryDuration: 120,
+        secondaryDuration: 0,
+        tilDone: false,
+        user: currentUser.uid,
+      };
+
+      const addSpecialTaskToFirebase = async () => {
+        await setDoc(endTaskRef, endTask);
+      };
+
+      const endTaskExists = [...todos, ...completedTodos].some(
+        (task) => task.id === endTask.id
+      );
+
+      if (!endTaskExists) {
+        setTodos((prevTodos) => [endTask, ...prevTodos]);
+        addSpecialTaskToFirebase();
+      }
+    }
+  }, [currentUser, todos, completedTodos, todoListId, db]);
 
   const handleToggle = async (id, completed) => {
-    console.log("this is setTodos from the HTTTTTTTTTTT");
     const todoListId = `${date.getFullYear()}-${
       date.getMonth() + 1
     }-${date.getDate()}`;
@@ -263,25 +327,33 @@ const ToDoList = ({
     const taskIndex = todos.findIndex((task) => task.id === id);
     let movedTask;
 
-    let newTodos = [...todos];
-    newTodos.splice(taskIndex, 1);
-    newTodos = newTodos.map((task, index) => ({ ...task, order: index })); // reset the order of remaining tasks
+    // Filter out the task that is being moved and update the orders of remaining tasks
+    let newTodos = todos.filter((task, index) => index !== taskIndex);
+    newTodos = newTodos.map((task, index) =>
+      task.isSpecial ? task : { ...task, order: index }
+    );
 
     if (user && user.role !== "guest") {
       if (taskIndex !== -1) {
         const updatedTask = {
           ...todos[taskIndex],
-          complete:
-            completed !== undefined ? completed : !todos[taskIndex].complete,
+          completed:
+            completed !== undefined ? completed : !todos[taskIndex].completed,
         };
 
-        if (updatedTask.complete) {
+        if (updatedTask.completed) {
+          // Task is being moved from todos to completedTodos
           const completedTask = {
             ...updatedTask,
             isRunning: false,
             order: null,
           };
-          setCompletedTodos([...completedTodos, completedTask]);
+
+          // Check if the task already exists in completedTodos before adding
+          if (!completedTodos.find((task) => task.id === completedTask.id)) {
+            setCompletedTodos([...completedTodos, completedTask]);
+          }
+
           setTodos(newTodos);
 
           // Update Firestore
@@ -300,8 +372,13 @@ const ToDoList = ({
             movedTask
           );
         } else {
+          // Task is being moved within todos
           updatedTask.order = newTodos.length;
-          setTodos([...newTodos, updatedTask]);
+
+          // Check if the task already exists in todos before adding
+          if (!todos.find((task) => task.id === updatedTask.id)) {
+            setTodos([...newTodos, updatedTask]);
+          }
 
           // Update Firestore
           movedTask = updatedTask;
@@ -320,20 +397,20 @@ const ToDoList = ({
           );
         }
       } else {
+        // Task is being moved from completedTodos to todos
         const completedTaskIndex = completedTodos.findIndex(
           (task) => task.id === id
         );
         const updatedTask = {
           ...completedTodos[completedTaskIndex],
-          complete: false,
-          isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
+          completed: false,
+          isRunning: false,
         };
         setRunningTaskIndex(-1);
         const newCompletedTodos = [...completedTodos];
         newCompletedTodos.splice(completedTaskIndex, 1);
         setCompletedTodos(newCompletedTodos);
 
-        // Update the incomplete task with the correct values
         const incompleteTask = {
           ...updatedTask,
           primaryDuration: updatedTask.primaryDuration,
@@ -341,9 +418,13 @@ const ToDoList = ({
           numCycles: updatedTask.numCycles,
           tilDone: updatedTask.tilDone,
           isRunning: false,
-          order: todos.length, // Here we set the order to the end of the list
+          order: updatedTask.id === "start" ? -1 : todos.length,
         };
-        setTodos([...todos, incompleteTask]);
+
+        // Check if the task already exists in todos before adding
+        if (!todos.find((task) => task.id === incompleteTask.id)) {
+          setTodos([...todos, incompleteTask]);
+        }
 
         // Update Firestore
         movedTask = incompleteTask;
@@ -378,11 +459,11 @@ const ToDoList = ({
       if (taskIndex !== -1) {
         const updatedTask = {
           ...todos[taskIndex],
-          complete:
-            completed !== undefined ? completed : !todos[taskIndex].complete,
+          completed:
+            completed !== undefined ? completed : !todos[taskIndex].completed,
         };
 
-        if (updatedTask.complete) {
+        if (updatedTask.completed) {
           const completedTask = {
             ...updatedTask,
             isRunning: false,
@@ -408,7 +489,7 @@ const ToDoList = ({
         );
         const updatedTask = {
           ...completedTodos[completedTaskIndex],
-          complete: false,
+          completed: false,
           isRunning: false,
         };
         setRunningTaskIndex(-1);
@@ -423,7 +504,7 @@ const ToDoList = ({
           numCycles: updatedTask.numCycles,
           tilDone: updatedTask.tilDone,
           isRunning: false,
-          order: todos.length,
+          order: updatedTask.id === "start" ? -1 : todos.length,
         };
         const newTodosWithIncomplete = [...todos, incompleteTask];
         setTodos(newTodosWithIncomplete);
@@ -555,6 +636,7 @@ const ToDoList = ({
 
       return Promise.resolve({ id: newId }); // Return a resolved promise with the new ID
     }
+    fetchTasks();
   };
 
   const handleNewTask = (
@@ -564,16 +646,28 @@ const ToDoList = ({
     numCycles,
     tilDone
   ) => {
+    // First, we ensure that the order of all regular tasks (not special) are incremented by 1
+    const updatedTodos = todos.map((todo) =>
+      !todo.isSpecial ? { ...todo, order: todo.order + 1 } : todo
+    );
+
+    // Find the index of the endTask
+    const endTaskIndex = updatedTodos.findIndex(
+      (todo) => todo.isSpecial && todo.place === "end"
+    );
+
+    // Then we add the new task with order: todos.length - 1 to insert it second from the very bottom
     const newTodo = {
       task: task,
-      complete: false,
+      completed: false,
       primaryDuration: primaryDuration,
       secondaryDuration: secondaryDuration,
       numCycles: numCycles,
       tilDone: tilDone,
       isRunning: false,
-      order: todos.length,
+      order: todos.length - 1, // Insert the new task second from the very bottom
       column: "column-1",
+      isSpecial: false, // new tasks added by users are not special
     };
 
     if (auth.currentUser) {
@@ -585,7 +679,9 @@ const ToDoList = ({
       .then((docRef) => {
         // Update newTodo id with Firestore document id or local storage id
         newTodo.id = docRef.id;
-        setTodos([...todos, newTodo]);
+        // Add the newTodo to the updated list of todos and update the state
+        updatedTodos.splice(endTaskIndex, 0, newTodo); // Insert the new task at the appropriate position
+        setTodos(updatedTodos);
         console.log(
           "New task added to Firestore/local storage and to state: ",
           newTodo
@@ -597,8 +693,33 @@ const ToDoList = ({
   };
 
   const handleOnDragEnd = async (result) => {
-    // No destination: user dragged outside the list
-    if (!result.destination) {
+    if (!result.destination) return;
+
+    // The following is the id of your start task
+    const startTaskId = "start";
+    const endTaskId = "end";
+
+    // Cancel the operation if the user tries to move the start task
+    if (result.draggableId === startTaskId) {
+      console.log("Sorry, you can't move the start task!");
+      return;
+    }
+
+    if (result.draggableId === endTaskId) {
+      console.log("Sorry, you can't move the end task!");
+      return;
+    }
+
+    const sourceId = result.source.droppableId;
+    const destinationId = result.destination.droppableId;
+
+    // Do not allow moving tasks from completedTodos to todos, and vice versa.
+    if (sourceId !== destinationId) {
+      return;
+    }
+
+    if (sourceId === "completedTodos") {
+      // Don't allow rearranging tasks within completedTodos.
       return;
     }
 
@@ -606,28 +727,41 @@ const ToDoList = ({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
+    // Update local state immediately
     setTodos(items);
 
-    if (currentUser) {
-      setLoading(true);
+    // Update local storage
+    localStorage.setItem("todos", JSON.stringify(items));
 
-      const todoListId = `${date.getFullYear()}-${
-        date.getMonth() + 1
-      }-${date.getDate()}`;
+    // If the running task is the one we moved, update the runningTaskIndex
+    if (runningTaskIndex === result.source.index) {
+      setRunningTaskIndex(result.destination.index);
+    } else {
+      // If the running task was not the one we moved but it was affected by the rearrangement, update its index accordingly
+      if (
+        result.destination.index <= runningTaskIndex &&
+        result.source.index > runningTaskIndex
+      ) {
+        setRunningTaskIndex(runningTaskIndex + 1);
+      } else if (
+        result.destination.index >= runningTaskIndex &&
+        result.source.index < runningTaskIndex
+      ) {
+        setRunningTaskIndex(runningTaskIndex - 1);
+      }
+    }
 
-      // Update Firestore in the background
-      await Promise.all(
-        items.map((todo, index) => {
-          const docRef = doc(
-            db,
-            `users/${currentUser.uid}/todoLists/${todoListId}/todos/`,
-            todo.id
-          );
-          return updateDoc(docRef, { order: index });
-        })
-      );
-
-      setLoading(false);
+    // Update Firestore in the background if a user is logged in
+    if (user && user.role !== "guest") {
+      items.forEach(async (todo, index) => {
+        const order = todo.isSpecial ? todo.order : index;
+        const docRef = doc(
+          db,
+          `users/${user.uid}/todoLists/${todoListId}/todos/`,
+          todo.id
+        );
+        await updateDoc(docRef, { order });
+      });
     }
   };
 
@@ -697,6 +831,7 @@ const ToDoList = ({
                     order={todo.order}
                     todos={todos}
                     setTodos={setTodos}
+                    isSpecial={todo.isSpecial}
                   />
                 ))}
                 {provided.placeholder}

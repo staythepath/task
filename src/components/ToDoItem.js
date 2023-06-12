@@ -21,6 +21,7 @@ const ToDoItem = ({
   volume,
   order,
   todos,
+  isSpecial,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -301,33 +302,36 @@ const ToDoItem = ({
           }
           //        className={ isRunning ? { isEditing ? 'isRunning-isEditingTask' : "isRunning-task"} : {isEditing ? "editing-task" : "task"}}
         >
-          <label
-            className={
-              isRunning ? "isRunning-checkbox-container" : "checkbox-container"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  id,
-                  index,
-                  task,
-                  complete: !complete,
-                  primaryDuration,
-                  secondaryDuration,
-                  numCycles,
-                  tilDone,
-                  isRunning: false,
-                };
-                handleUpdate(userId, updatedTask);
-                onToggle(id, !complete);
-              }}
-            />
-            <span className="checkbox"></span>
-          </label>
-
+          {!isSpecial && (
+            <label
+              className={
+                isRunning
+                  ? "isRunning-checkbox-container"
+                  : "checkbox-container"
+              }
+            >
+              <input
+                type="checkbox"
+                checked={complete}
+                onChange={() => {
+                  const updatedTask = {
+                    id,
+                    index,
+                    task,
+                    complete: !complete,
+                    primaryDuration,
+                    secondaryDuration,
+                    numCycles,
+                    tilDone,
+                    isRunning: false,
+                  };
+                  handleUpdate(userId, updatedTask);
+                  onToggle(id, !complete);
+                }}
+              />
+              <span className="checkbox"></span>
+            </label>
+          )}
           {isEditing ? (
             <input
               type="text"
@@ -684,6 +688,7 @@ const ToDoItem = ({
                     {isRunning ? "Pause" : "Start"}
                   </button>
                 )}
+
                 <button
                   onClick={resetTimer}
                   style={{ marginLeft: "1rem" }}
@@ -693,44 +698,26 @@ const ToDoItem = ({
                 >
                   Reset
                 </button>
-                <button
-                  onClick={onDelete}
-                  style={{ marginLeft: "1rem" }}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  Delete
-                </button>
+
+                {!isSpecial && (
+                  <button
+                    onClick={onDelete}
+                    style={{ marginLeft: "1rem" }}
+                    className={
+                      isRunning ? "isRunning-button" : "notRunning-button"
+                    }
+                  >
+                    Delete
+                  </button>
+                )}
               </>
             )}
 
-            {isRunning ? (
-              <button
-                className={
-                  "notRunning-button" /*"button-84" Use this for the other button*/
-                }
-                style={{
-                  marginLeft: "1rem",
-
-                  textAlign: "center",
-                }}
-              >
-                Edit
-              </button>
-            ) : (
+            {!isSpecial && (
               <button
                 onClick={isEditing ? updateTask : toggleEdit}
-                className={
-                  isRunning
-                    ? "isRunning-button"
-                    : "notRunning-button" /*"button-84" Use this for the other button*/
-                }
-                style={{
-                  marginLeft: "1rem",
-
-                  textAlign: "center",
-                }}
+                className={isRunning ? "isRunning-button" : "notRunning-button"}
+                style={{ marginLeft: "1rem", textAlign: "center" }}
               >
                 {isEditing ? "Done" : "Edit"}
               </button>
