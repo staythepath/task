@@ -120,7 +120,12 @@ function App() {
                 path="/Journals"
                 element={
                   isAuth ? (
-                    <Journals todos={todos} setTodos={setTodos} />
+                    <Journals
+                      todos={todos}
+                      setTodos={setTodos}
+                      completedTodos={completedTodos}
+                      setCompletedTodos={setCompletedTodos}
+                    />
                   ) : (
                     <Home />
                   )

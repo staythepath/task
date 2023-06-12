@@ -250,6 +250,7 @@ const ToDoList = ({
       const startTask = {
         id: startTaskId,
         task: "Visualize yourself doing all the steps of each task.",
+        completed: false,
         complete: false,
         place: "start",
         column: "column-1",
@@ -291,6 +292,7 @@ const ToDoList = ({
       const endTask = {
         id: endTaskId,
         task: "Go to the journals page and complete the day.",
+        completed: false,
         complete: false,
         place: "end",
         column: "column-1",
@@ -339,6 +341,8 @@ const ToDoList = ({
           ...todos[taskIndex],
           completed:
             completed !== undefined ? completed : !todos[taskIndex].completed,
+          complete:
+            completed !== undefined ? completed : !todos[taskIndex].completed, // Updating the 'complete' attribute
         };
 
         if (updatedTask.completed) {
@@ -404,6 +408,7 @@ const ToDoList = ({
         const updatedTask = {
           ...completedTodos[completedTaskIndex],
           completed: false,
+          complete: false,
           isRunning: false,
         };
         setRunningTaskIndex(-1);
@@ -461,6 +466,8 @@ const ToDoList = ({
           ...todos[taskIndex],
           completed:
             completed !== undefined ? completed : !todos[taskIndex].completed,
+          complete:
+            completed !== undefined ? completed : !todos[taskIndex].completed, // Updating the 'complete' attribute
         };
 
         if (updatedTask.completed) {
@@ -490,6 +497,7 @@ const ToDoList = ({
         const updatedTask = {
           ...completedTodos[completedTaskIndex],
           completed: false,
+          complete: false,
           isRunning: false,
         };
         setRunningTaskIndex(-1);
@@ -660,6 +668,7 @@ const ToDoList = ({
     const newTodo = {
       task: task,
       completed: false,
+      complete: false,
       primaryDuration: primaryDuration,
       secondaryDuration: secondaryDuration,
       numCycles: numCycles,

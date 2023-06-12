@@ -22,6 +22,9 @@ function Journal({ todos, setTodos }) {
   const [user] = useAuthState(auth);
 
   const date = new Date();
+  const todoListId = `${date.getFullYear()}-${
+    date.getMonth() + 1
+  }-${date.getDate()}`;
 
   const today = `${date.getFullYear()}-${
     date.getMonth() + 1
@@ -55,6 +58,11 @@ function Journal({ todos, setTodos }) {
     } catch (err) {
       console.error(err);
     }
+    const endTaskRef = doc(
+      db,
+      `users/${user.uid}/todoLists/${todoListId}/todos/end`
+    );
+    await updateDoc(endTaskRef, { completed: true });
   };
 
   const getJournals = useCallback(async () => {
@@ -87,6 +95,11 @@ function Journal({ todos, setTodos }) {
     await updateDoc(entryDoc, { Entry: updatedEntry });
     setEditMode(false); // Add this line
     getJournals();
+    const endTaskRef = doc(
+      db,
+      `users/${user.uid}/todoLists/${todoListId}/todos/end`
+    );
+    await updateDoc(endTaskRef, { completed: true, complete: true });
   };
 
   return (
