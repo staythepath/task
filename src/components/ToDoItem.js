@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import { auth } from "../config/firebase";
 
@@ -22,6 +22,9 @@ const ToDoItem = ({
   order,
   todos,
   isSpecial,
+  elapsedTime,
+  setElapsedTime,
+  totalElapsedTime,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -40,7 +43,7 @@ const ToDoItem = ({
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
   const timeoutId = useRef(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
+
   const userId = auth.currentUser ? auth.currentUser.uid : null;
 
   useEffect(() => {
@@ -62,18 +65,55 @@ const ToDoItem = ({
     }
   }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
 
+  const handleTaskCompletion = useCallback(() => {
+    console.log("from handleTaskCompletion", elapsedTime);
+    setIsRunning(false);
+
+    console.log("elapsedTime: ", elapsedTime);
+    const updatedTask = {
+      id,
+      index,
+      task,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+      tilDone,
+      isRunning: false,
+      totalElapsedTime: elapsedTime, // use the state value here
+    };
+    console.log("from handleTaskCompletion", updatedTask);
+    handleUpdate(userId, updatedTask);
+    onToggle(id, true);
+
+    setElapsedTime(0);
+
+    //
+  }, [
+    elapsedTime,
+    setElapsedTime,
+    id,
+    index,
+    task,
+    primaryDuration,
+    secondaryDuration,
+    numCycles,
+    tilDone,
+    handleUpdate,
+    userId,
+    onToggle,
+  ]);
+
   useEffect(() => {
     let timer;
-
-    if (isRunning && tilDone) {
+    if (isRunning) {
       timer = setInterval(
         () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
         1000
       );
     }
-
+    console.log("from elapsedTime useEFFECT", elapsedTime);
     return () => clearInterval(timer);
-  }, [isRunning, tilDone]);
+  }, [isRunning, elapsedTime, setElapsedTime]);
 
   useEffect(() => {
     let timer;
@@ -85,25 +125,6 @@ const ToDoItem = ({
         audio.play();
         setTimeout(() => playBell(times - 1), 1000);
       }
-    };
-
-    const handleTaskCompletion = () => {
-      console.log(tilDone);
-      setIsRunning(false);
-
-      const updatedTask = {
-        id,
-        index,
-        task,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning: false,
-      };
-      handleUpdate(userId, updatedTask);
-      onToggle(id, true);
-      //
     };
 
     const playApplause = (times = 1) => {
@@ -149,6 +170,7 @@ const ToDoItem = ({
               1000
             );
           } else if (!tilDone) {
+            console.log("from handleTaskCompletion");
             handleTaskCompletion();
           }
         }
@@ -173,6 +195,7 @@ const ToDoItem = ({
     isTaskInTodos,
     volume,
     userId,
+    handleTaskCompletion,
   ]);
 
   const toggleEdit = () => {
@@ -181,6 +204,7 @@ const ToDoItem = ({
 
   const updateTask = () => {
     setIsEditing(false);
+    console.log("elapsedTime from updateTask", elapsedTime);
     if (!tilDone) {
       console.log({
         id,
@@ -205,6 +229,7 @@ const ToDoItem = ({
         tilDone,
         isRunning,
         order,
+        totalElapsedTime: elapsedTime,
       });
     } else {
       console.log({
@@ -230,6 +255,7 @@ const ToDoItem = ({
         tilDone,
         isRunning,
         order,
+        totalElapsedTime: elapsedTime,
       });
     }
   };
@@ -314,6 +340,7 @@ const ToDoItem = ({
                 type="checkbox"
                 checked={complete}
                 onChange={() => {
+                  console.log("from the jsx", elapsedTime);
                   const updatedTask = {
                     id,
                     index,
@@ -324,11 +351,15 @@ const ToDoItem = ({
                     numCycles,
                     tilDone,
                     isRunning: false,
+                    totalElapsedTime: elapsedTime,
                   };
-                  handleUpdate(userId, updatedTask);
-                  onToggle(id, !complete);
+
+                  handleUpdate(userId, updatedTask).then(() => {
+                    onToggle(id, !complete);
+                  });
                 }}
               />
+
               <span className="checkbox"></span>
             </label>
           )}
@@ -644,27 +675,60 @@ const ToDoItem = ({
             )}
 
             <div className="countdown">
-              {tilDone ? (
-                <input
-                  type="text"
-                  value={`${Math.floor(elapsedTime / 60)}:${String(
-                    elapsedTime % 60
-                  ).padStart(2, "0")}`}
-                  readOnly
-                  className={isRunning ? "isRunningCountdown" : "countdown"}
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginLeft: ".5rem",
-                    marginRight: ".5rem",
-                  }}
-                />
+              {!complete ? (
+                <>
+                  {tilDone ? (
+                    <input
+                      type="text"
+                      value={`${
+                        Math.floor(elapsedTime / 3600)
+                          ? Math.floor(elapsedTime / 3600) + ":"
+                          : ""
+                      }${String(Math.floor(elapsedTime / 60) % 60).padStart(
+                        2,
+                        "0"
+                      )}:${String(elapsedTime % 60).padStart(2, "0")}`}
+                      readOnly
+                      className={isRunning ? "isRunningCountdown" : "countdown"}
+                      style={{
+                        width: "100%",
+                        textAlign: "center",
+                        marginLeft: ".5rem",
+                        marginRight: ".5rem",
+                      }}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={`${
+                        Math.floor(timeLeft / 3600)
+                          ? Math.floor(timeLeft / 3600) + ":"
+                          : ""
+                      }${String(Math.floor(timeLeft / 60) % 60).padStart(
+                        2,
+                        "0"
+                      )}:${String(timeLeft % 60).padStart(2, "0")}`}
+                      readOnly
+                      className={isRunning ? "isRunningCountdown" : "countdown"}
+                      style={{
+                        width: "100%",
+                        textAlign: "center",
+                        marginLeft: ".5rem",
+                      }}
+                    />
+                  )}
+                </>
               ) : (
                 <input
                   type="text"
-                  value={`${Math.floor(timeLeft / 60)}:${String(
-                    timeLeft % 60
-                  ).padStart(2, "0")}`}
+                  value={`${
+                    Math.floor(totalElapsedTime / 3600)
+                      ? Math.floor(totalElapsedTime / 3600) + ":"
+                      : ""
+                  }${String(Math.floor(totalElapsedTime / 60) % 60).padStart(
+                    2,
+                    "0"
+                  )}:${String(totalElapsedTime % 60).padStart(2, "0")}`}
                   readOnly
                   className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
@@ -676,51 +740,57 @@ const ToDoItem = ({
               )}
             </div>
 
-            {!isEditing && (
+            {!complete && (
               <>
-                {!complete && (
-                  <button
-                    onClick={toggleTimer}
-                    className={
-                      isRunning ? "isRunning-button" : "notRunning-button"
-                    }
-                  >
-                    {isRunning ? "Pause" : "Start"}
-                  </button>
-                )}
+                {!isEditing && (
+                  <>
+                    {!complete && (
+                      <button
+                        onClick={toggleTimer}
+                        className={
+                          isRunning ? "isRunning-button" : "notRunning-button"
+                        }
+                      >
+                        {isRunning ? "Pause" : "Start"}
+                      </button>
+                    )}
 
-                <button
-                  onClick={resetTimer}
-                  style={{ marginLeft: "1rem" }}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  Reset
-                </button>
+                    <button
+                      onClick={resetTimer}
+                      style={{ marginLeft: "1rem" }}
+                      className={
+                        isRunning ? "isRunning-button" : "notRunning-button"
+                      }
+                    >
+                      Reset
+                    </button>
+
+                    {!isSpecial && (
+                      <button
+                        onClick={onDelete}
+                        style={{ marginLeft: "1rem" }}
+                        className={
+                          isRunning ? "isRunning-button" : "notRunning-button"
+                        }
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </>
+                )}
 
                 {!isSpecial && (
                   <button
-                    onClick={onDelete}
-                    style={{ marginLeft: "1rem" }}
+                    onClick={isEditing ? updateTask : toggleEdit}
                     className={
                       isRunning ? "isRunning-button" : "notRunning-button"
                     }
+                    style={{ marginLeft: "1rem", textAlign: "center" }}
                   >
-                    Delete
+                    {isEditing ? "Done" : "Edit"}
                   </button>
                 )}
               </>
-            )}
-
-            {!isSpecial && (
-              <button
-                onClick={isEditing ? updateTask : toggleEdit}
-                className={isRunning ? "isRunning-button" : "notRunning-button"}
-                style={{ marginLeft: "1rem", textAlign: "center" }}
-              >
-                {isEditing ? "Done" : "Edit"}
-              </button>
             )}
           </div>
         </li>
