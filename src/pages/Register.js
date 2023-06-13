@@ -62,6 +62,7 @@ function Register() {
   return (
     <div
       style={{
+        paddingTop: "80px", // This is to account for the navbar
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

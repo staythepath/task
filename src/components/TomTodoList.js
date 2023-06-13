@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
-import { Slider } from "@mui/material";
-import { styled } from "@mui/system";
+
 import TodoItemTom from "./TodoItemTom";
-import NewTaskForm from "./NewTaskForm";
-import { BsVolumeUpFill } from "react-icons/bs";
+import NewTaskFormNoPad from "./NewTaskFormNoPad";
 import { auth, db } from "../config/firebase";
 import {
   addDoc,
@@ -15,28 +13,7 @@ import {
   orderBy,
   updateDoc,
   onSnapshot,
-  setDoc,
 } from "firebase/firestore";
-
-const StyledSlider = styled(Slider)({
-  width: 200,
-  margin: "0 auto",
-
-  color: "black",
-  "& .MuiSlider-thumb": {
-    height: 24,
-    width: 24,
-    backgroundColor: "#ccc",
-  },
-  "& .MuiSlider-track": {
-    height: 8,
-    backgroundColor: "gray",
-  },
-  "& .MuiSlider-rail": {
-    height: 8,
-    backgroundColor: "gray",
-  },
-});
 
 const tomorrow = (() => {
   const date = new Date();
@@ -44,23 +21,16 @@ const tomorrow = (() => {
   return date;
 })();
 
-const date = new Date();
-const todoListId = `${tomorrow.getFullYear()}-${
+const todoTListId = `${tomorrow.getFullYear()}-${
   tomorrow.getMonth() + 1
 }-${tomorrow.getDate()}`;
 
-const ToDoList = ({
-  todos,
-  setTodos,
-  completedTodos,
-  setCompletedTodos,
-  isRunning,
-  setIsRunning,
-}) => {
+const ToDoList = ({ isRunning, setIsRunning }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
-  const [volume, setVolume] = useState(20);
-  const [user, setUser] = useState({ role: "guest" }); // Default user state
 
+  const [user, setUser] = useState({ role: "guest" }); // Default user state
+  const [todosT, setTodosT] = useState([]);
+  const [completedTodosT, setCompletedTodosT] = useState([]);
   const tomorrow = useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() + 1);
@@ -91,24 +61,24 @@ const ToDoList = ({
           tomorrow.getMonth() + 1
         }-${tomorrow.getDate()}`;
 
-        const todosRef = collection(
+        const todosTRef = collection(
           db,
           `users/${user.uid}/todoLists/${todoListId}/todos`
         );
 
-        const todosQuery = query(todosRef, orderBy("order"));
+        const todosTQuery = query(todosTRef, orderBy("order"));
 
-        const unsubscribeTodos = onSnapshot(todosQuery, (snapshot) => {
-          const userTodos = snapshot.docs.map((doc) => ({
+        const unsubscribeTodosT = onSnapshot(todosTQuery, (snapshot) => {
+          const userTodosT = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
-          setTodos(userTodos);
+          setTodosT(userTodosT);
         });
 
         // Return cleanup function for Firestore listeners
         return () => {
-          unsubscribeTodos();
+          unsubscribeTodosT();
         };
       } else {
         // If no user is logged in, then load the data from local storage
@@ -117,138 +87,22 @@ const ToDoList = ({
           localStorage.getItem("completedTodos");
 
         if (localStorageTodos && localStorageCompletedTodos) {
-          setTodos(JSON.parse(localStorageTodos));
-          setCompletedTodos(JSON.parse(localStorageCompletedTodos));
+          setTodosT(JSON.parse(localStorageTodos));
+          setCompletedTodosT(JSON.parse(localStorageCompletedTodos));
         }
       }
     });
 
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
-  }, [setTodos, setCompletedTodos, tomorrow]);
-
-  const handleToggle = async (id, completed) => {
-    const todoListId = `${tomorrow.getFullYear()}-${
-      tomorrow.getMonth() + 1
-    }-${tomorrow.getDate()}`;
-    const taskIndex = todos.findIndex((task) => task.id === id);
-
-    let movedTask;
-    ////
-    let newTodos = [...todos];
-    newTodos.splice(taskIndex, 1);
-    newTodos = newTodos.map((task, index) => ({ ...task, order: index })); // reset the order of remaining tasks
-
-    if (taskIndex !== -1) {
-      const updatedTask = {
-        ...todos[taskIndex],
-        complete:
-          completed !== undefined ? completed : !todos[taskIndex].complete,
-      };
-
-      if (updatedTask.complete) {
-        const completedTask = {
-          ...updatedTask,
-          isRunning: false,
-          order: null,
-        };
-        setCompletedTodos([...completedTodos, completedTask]);
-        setTodos(newTodos);
-
-        // Update Firestore
-        movedTask = completedTask;
-        await deleteDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-          )
-        );
-        await setDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-          ),
-          movedTask
-        );
-      } else {
-        updatedTask.order = newTodos.length;
-        setTodos([...newTodos, updatedTask]);
-
-        // Update Firestore
-        movedTask = updatedTask;
-        await deleteDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-          )
-        );
-        await setDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-          ),
-          movedTask
-        );
-      }
-    } else {
-      const completedTaskIndex = completedTodos.findIndex(
-        (task) => task.id === id
-      );
-      const updatedTask = {
-        ...completedTodos[completedTaskIndex],
-        complete: false,
-        isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
-      };
-      setRunningTaskIndex(-1);
-      const newCompletedTodos = [...completedTodos];
-      newCompletedTodos.splice(completedTaskIndex, 1);
-      setCompletedTodos(newCompletedTodos);
-
-      // Update the incomplete task with the correct values
-      const incompleteTask = {
-        ...updatedTask,
-        primaryDuration: updatedTask.primaryDuration,
-        secondaryDuration: updatedTask.secondaryDuration,
-        numCycles: updatedTask.numCycles,
-        tilDone: updatedTask.tilDone,
-        isRunning: false,
-        order: todos.length, // Here we set the order to the end of the list
-      };
-      setTodos([...todos, incompleteTask]);
-
-      // Update Firestore
-      movedTask = incompleteTask;
-      await deleteDoc(
-        doc(
-          db,
-          `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-        )
-      );
-      await setDoc(
-        doc(
-          db,
-          `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-        ),
-        movedTask
-      );
-    }
-
-    // Update Firestore for the remaining todos' orders
-    for (let i = 0; i < newTodos.length; i++) {
-      const updatedTodo = newTodos[i];
-      await updateDoc(
-        doc(
-          db,
-          `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${updatedTodo.id}`
-        ),
-        { order: updatedTodo.order }
-      );
-    }
-  };
+  }, [setTodosT, setCompletedTodosT, tomorrow]);
 
   // ...other code
 
   const deleteTask = async (userId, taskId, id) => {
+    const todoListId = `${tomorrow.getFullYear()}-${
+      tomorrow.getMonth() + 1
+    }-${tomorrow.getDate()}`;
     const taskRef = doc(
       db,
       `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${taskId}`
@@ -267,8 +121,8 @@ const ToDoList = ({
       // Deleting the task from Firestore
       deleteTask(user.uid, id)
         .then(() => {
-          const newTodos = todos.filter((todo) => todo.id !== id);
-          setTodos(newTodos);
+          const newTodosT = todosT.filter((todoT) => todoT.id !== id);
+          setTodosT(newTodosT);
           console.log("Task deleted from Firestore and from state: ", id);
         })
         .catch((error) => {
@@ -277,25 +131,28 @@ const ToDoList = ({
     }
   };
 
-  const isTaskInTodos = (taskId) => {
-    return todos.some((todo) => todo.id === taskId);
+  const isTaskInTodosT = (taskId) => {
+    return todosT.some((todoT) => todoT.id === taskId);
   };
 
   const handleUpdate = async (userId, updatedTask) => {
-    const newTodos = todos.map((todo) =>
+    const newTodosT = todosT.map((todo) =>
       todo.id === updatedTask.id ? updatedTask : todo
     );
-    setTodos(newTodos);
+    setTodosT(newTodosT);
 
-    const newCompletedTodos = completedTodos.map((completedTodo) =>
+    const newCompletedTodosT = completedTodosT.map((completedTodo) =>
       completedTodo.id === updatedTask.id ? updatedTask : completedTodo
     );
-    setCompletedTodos(newCompletedTodos);
+    setCompletedTodosT(newCompletedTodosT);
 
-    const collectionPath = isTaskInTodos(updatedTask.id)
+    const collectionPath = isTaskInTodosT(updatedTask.id)
       ? "todos"
       : "completedTodos";
 
+    const todoListId = `${tomorrow.getFullYear()}-${
+      tomorrow.getMonth() + 1
+    }-${tomorrow.getDate()}`;
     const taskRef = doc(
       db,
       `users/${userId}/todoLists/${todoListId}/${collectionPath}/${updatedTask.id}`
@@ -332,13 +189,13 @@ const ToDoList = ({
     }-${tomorrow.getDate()}`;
 
     if (userId) {
-      const todosRef = collection(
+      const todosTRef = collection(
         db,
         `users/${userId}/todoLists/${todoListId}/todos/`
       );
 
       try {
-        const docRef = await addDoc(todosRef, task);
+        const docRef = await addDoc(todosTRef, task);
         console.log("Document written with ID: ", docRef.id);
         return docRef; // Return the docRef so it can be used in handleNewTask
       } catch (e) {
@@ -348,10 +205,10 @@ const ToDoList = ({
       // If no user is logged in, then store the data in local storage
       const newId = Date.now(); // Create a new ID based on the current timestamp
       const newTask = { ...task, id: newId }; // Create a new task with this ID
-      const updatedTodos = [...todos, newTask]; // Add the new task to the current state
+      const updatedTodosT = [...todosT, newTask]; // Add the new task to the current state
 
-      setTodos(updatedTodos); // Update the state
-      localStorage.setItem("todos", JSON.parse(updatedTodos)); // Store the updated state in local storage
+      setTodosT(updatedTodosT); // Update the state
+      localStorage.setItem("todos", JSON.parse(updatedTodosT)); // Store the updated state in local storage
 
       return Promise.resolve({ id: newId }); // Return a resolved promise with the new ID
     }
@@ -373,7 +230,7 @@ const ToDoList = ({
       tilDone: tilDone,
       isRunning: false,
       userId: auth.currentUser.uid,
-      order: todos.length,
+      order: todosT.length,
       column: "column-1",
     };
 
@@ -382,7 +239,7 @@ const ToDoList = ({
       .then((docRef) => {
         // Update newTodo id with Firestore document id
         newTodo.id = docRef.id;
-        setTodos([...todos, newTodo]);
+        setTodosT([...todosT, newTodo]);
         console.log("New task added to Firestore and to state: ", newTodo);
       })
       .catch((error) => {
@@ -406,19 +263,19 @@ const ToDoList = ({
       return;
     }
 
-    const items = Array.from(todos);
+    const items = Array.from(todosT);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
     // Update local state immediately
-    setTodos(items);
+    setTodosT(items);
 
     // Update Firestore in the background
-    items.forEach((todo, index) => {
+    items.forEach((todoT, index) => {
       const docRef = doc(
         db,
-        `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`,
-        todo.id
+        `users/${auth.currentUser.uid}/todoLists/${todoTListId}/todos/`,
+        todoT.id
       );
       updateDoc(docRef, { order: index });
     });
@@ -442,13 +299,12 @@ const ToDoList = ({
     }
   };
 
-  const handleVolumeChange = (event, newValue) => {
-    setVolume(newValue);
-  };
-
   return (
     <>
-      <NewTaskForm onSubmit={handleNewTask} />
+      <NewTaskFormNoPad
+        onSubmit={handleNewTask}
+        style={{ paddingTop: "0px" }}
+      />
       <DragDropContext onDragEnd={handleOnDragEnd}>
         <div className="ToDoList">
           <div
@@ -459,55 +315,33 @@ const ToDoList = ({
             }}
           >
             <h3>Tasks for tomorrow</h3>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <button style={{ backgroundColor: "transparent" }}>
-                <BsVolumeUpFill size={30} />
-              </button>
-              <div style={{ width: "100%" }}>
-                {" "}
-                {/* Slider Container */}
-                <StyledSlider
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  aria-labelledby="continuous-slider"
-                />
-              </div>
-            </div>
           </div>
 
           <Droppable droppableId="todos">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef}>
-                {todos.map((todo, index) => (
+                {todosT.map((todoT, index) => (
                   <TodoItemTom
-                    key={todo.id}
+                    key={todoT.id}
                     handleUpdate={handleUpdate}
                     index={index}
-                    id={todo.id}
-                    task={todo.task}
-                    complete={todo.complete}
-                    primaryDuration={todo.primaryDuration}
-                    secondaryDuration={todo.secondaryDuration}
-                    numCycles={todo.numCycles}
-                    onToggle={() => handleToggle(todo.id)}
-                    onDelete={() => handleDelete(todo.id)}
-                    tilDone={todo.tilDone}
-                    isRunning={todo.isRunning}
+                    id={todoT.id}
+                    task={todoT.task}
+                    complete={todoT.complete}
+                    primaryDuration={todoT.primaryDuration}
+                    secondaryDuration={todoT.secondaryDuration}
+                    numCycles={todoT.numCycles}
+                    onDelete={() => handleDelete(todoT.id)}
+                    tilDone={todoT.tilDone}
+                    isRunning={todoT.isRunning}
                     setIsRunning={setIsRunning}
                     runningTaskIndex={runningTaskIndex}
                     setRunningTaskIndex={setRunningTaskIndex}
-                    isTaskInTodos={isTaskInTodos}
-                    draggableId={todo.id.toString()}
-                    volume={volume}
-                    order={todo.order}
-                    todos={todos}
-                    setTodos={setTodos}
+                    isTaskInTodos={isTaskInTodosT}
+                    draggableId={todoT.id.toString()}
+                    order={todoT.order}
+                    todos={todosT}
+                    setTodos={setTodosT}
                   />
                 ))}
                 {provided.placeholder}

@@ -23,7 +23,7 @@ function Journal({
 }) {
   const [journals, setJournals] = useState([]);
   const [newEntry, setNewEntry] = useState("");
-  const [newComplete, setNewComplete] = useState(false);
+
   const [updatedEntry, setUpdatedEntry] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [user] = useAuthState(auth);
@@ -47,8 +47,16 @@ function Journal({
     return `${formattedDate}_${formattedTime}`;
   };
 
+  const playApplause = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/applause.mp3");
+      audio.volume = 20 / 100;
+      audio.play();
+      setTimeout(() => playApplause(times - 1), 1000);
+    }
+  };
+
   const handleToggle = async (id, completed) => {
-    console.log("running handleToggle");
     const todoListId = `${date.getFullYear()}-${
       date.getMonth() + 1
     }-${date.getDate()}`;
@@ -71,9 +79,11 @@ function Journal({
           complete:
             completed !== undefined ? completed : !todos[taskIndex].completed, // Updating the 'complete' attribute
         };
-
+        playApplause(1);
         if (updatedTask.completed) {
           // Task is being moved from todos to completedTodos
+          console.log("checking updatedTask from handleToggle", updatedTask);
+
           const completedTask = {
             ...updatedTask,
             isRunning: false,
@@ -254,15 +264,17 @@ function Journal({
 
   const onSubmitEntryAndUpdateEndTask = async () => {
     console.log("here are the todos", todos);
+    const todoToEnd = todos[todos.length - 1];
     // only pass in id if todaysEntry is not undefined
     await onSubmitEntry(todaysEntry ? todaysEntry.id : undefined);
-    handleToggle("end", true);
+    handleToggle(todoToEnd.id, true);
   };
 
   const updateEntryAndUpdateEndTask = async () => {
     console.log("here are the todos", todos);
+    const todoToEnd = todos[todos.length - 1];
     await updateEntry(todaysEntry.id);
-    handleToggle("end");
+    handleToggle(todoToEnd.id, true);
   };
 
   const onSubmitEntry = async () => {
@@ -278,13 +290,13 @@ function Journal({
 
     try {
       await setDoc(newDocRef, {
-        Complete: newComplete,
+        Complete: true,
         currentTime: serverTimestamp(),
         Entry: newEntry,
         date: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
       });
       setNewEntry("");
-      setNewComplete(false);
+
       getJournals();
       setEditMode(false);
     } catch (err) {
@@ -337,8 +349,21 @@ function Journal({
 
   return (
     <div className="ToDoList">
-      <div className="ToDoList-header" style={{ paddingTop: "80px" }}>
-        <h1> Write a bit about today and set tasks for tomorrow! </h1>
+      <div
+        className="ToDoList-header"
+        style={{ paddingTop: "80px", paddingBottom: "0px" }}
+      >
+        <h1>
+          {todaysEntry && todaysEntry.Complete
+            ? "Day Complete!"
+            : "Write a bit about today"}
+          <br />
+          {todaysEntry && todaysEntry.Complete
+            ? "Great Job! "
+            : "and set tasks for tomorrow!"}
+          <br />
+          {todaysEntry && todaysEntry.Complete && "Now do it again tomorrow!"}
+        </h1>
         <br />
       </div>
 

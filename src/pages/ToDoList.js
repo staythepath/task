@@ -4,7 +4,7 @@ import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItem from "../components/ToDoItem";
 import NewTaskForm from "../components/NewTaskForm";
-import { BsVolumeUpFill } from "react-icons/bs";
+import { BsVolumeUpFill, BsVolumeMuteFill } from "react-icons/bs";
 import { auth, db } from "../config/firebase";
 import {
   addDoc,
@@ -57,7 +57,10 @@ const ToDoList = ({
   const [volume, setVolume] = useState(20);
   const [user, setUser] = useState({ role: "guest" }); // Default user state
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const [muted, setMuted] = useState(false);
+  const [previousVolume, setPreviousVolume] = useState(20);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authUser) => {
@@ -131,12 +134,9 @@ const ToDoList = ({
           });
 
           console.log("Here is tasksData before the setTodos", tasksData);
-          console.log(
-            "Here is setTodos before it's set in fetchTasks!!!!!!!!!!",
-            todos
-          );
+
           await setTodos(tasksData);
-          console.log("Here are the todos after the setTodos", todos);
+
           console.log("Here is tasksData after the setTodos", tasksData);
           console.log("Fetch Tasks Else If Ran");
 
@@ -149,10 +149,10 @@ const ToDoList = ({
         }
       }, 1); // 1000ms delay = 1 second
     }
-  }, [setCompletedTodos]);
+  }, [setCompletedTodos, setTodos]);
 
   useEffect(() => {
-    if (currentUser && !loading) {
+    if (currentUser) {
       const todoListId = `${date.getFullYear()}-${
         date.getMonth() + 1
       }-${date.getDate()}`;
@@ -178,7 +178,7 @@ const ToDoList = ({
     } else {
       fetchTasks();
     }
-  }, [fetchTasks, currentUser, loading, setTodos]);
+  }, [fetchTasks, currentUser, setTodos]);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
@@ -254,7 +254,7 @@ const ToDoList = ({
         completed: false,
         complete: false,
         place: "start",
-        column: "column-1",
+        column: "column-2",
         isRunning: false,
         isSpecial: true,
         numCycles: 1,
@@ -278,28 +278,11 @@ const ToDoList = ({
         addSpecialTaskToFirebase();
       }
     }
-  }, [currentUser, todos, completedTodos, todoListId, db]);
+  }, [currentUser, todos, completedTodos, setTodos]);
 
   useEffect(() => {
     if (currentUser) {
       // Create a new Date object for the current date/time
-      let now = new Date();
-
-      // Create a new Date object for midnight tonight
-      let midnight = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + 1,
-        0,
-        0,
-        0
-      );
-
-      // Calculate the difference in milliseconds
-      let timeToMidnight = midnight.getTime() - now.getTime();
-
-      // Calculate the difference in seconds
-      let timeToMidnightInSeconds = timeToMidnight / 1000;
 
       const endTaskId = "end";
       const endTaskRef = doc(
@@ -311,16 +294,16 @@ const ToDoList = ({
 
       const endTask = {
         id: endTaskId,
-        task: "Go to the journals page and complete the day.",
+        task: "Go to journals page, make some task for tomorrow, write a quick journal entry, and complete the day.",
         completed: false,
         complete: false,
         place: "end",
-        column: "column-1",
+        column: "column-2",
         isRunning: false,
         isSpecial: true,
         numCycles: 1,
         order: specialOrder,
-        primaryDuration: timeToMidnightInSeconds,
+        primaryDuration: 86400,
         secondaryDuration: 0,
         tilDone: false,
         user: currentUser.uid,
@@ -339,7 +322,16 @@ const ToDoList = ({
         addSpecialTaskToFirebase();
       }
     }
-  }, [currentUser, todos, completedTodos, todoListId, db]);
+  }, [currentUser, todos, completedTodos, setTodos]);
+
+  const playApplause = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/applause.mp3");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playApplause(times - 1), 1000);
+    }
+  };
 
   const handleToggle = async (id, completed) => {
     const todoListId = `${date.getFullYear()}-${
@@ -364,15 +356,18 @@ const ToDoList = ({
           complete:
             completed !== undefined ? completed : !todos[taskIndex].completed, // Updating the 'complete' attribute
         };
-
+        playApplause(1);
         if (updatedTask.completed) {
           // Task is being moved from todos to completedTodos
+          console.log("checking updatedTask from handleToggle", updatedTask);
+
           const completedTask = {
             ...updatedTask,
             isRunning: false,
             order: null,
+            totalElapsedTime: elapsedTime,
           };
-
+          setElapsedTime(0);
           // Check if the task already exists in completedTodos before adding
           if (!completedTodos.find((task) => task.id === completedTask.id)) {
             setCompletedTodos([...completedTodos, completedTask]);
@@ -443,7 +438,12 @@ const ToDoList = ({
           numCycles: updatedTask.numCycles,
           tilDone: updatedTask.tilDone,
           isRunning: false,
-          order: updatedTask.id === "start" ? -1 : todos.length,
+          order:
+            updatedTask.id === "start"
+              ? -1
+              : updatedTask.id === "end"
+              ? 999
+              : todos.length,
         };
 
         // Check if the task already exists in todos before adding
@@ -582,16 +582,7 @@ const ToDoList = ({
   };
 
   const handleUpdate = async (userId, updatedTask) => {
-    const newTodos = todos.map((todo) =>
-      todo.id === updatedTask.id ? updatedTask : todo
-    );
-    setTodos(newTodos);
-
-    const newCompletedTodos = completedTodos.map((completedTodo) =>
-      completedTodo.id === updatedTask.id ? updatedTask : completedTodo
-    );
-    setCompletedTodos(newCompletedTodos);
-
+    console.log("Updated task from handleUpdate: ", updatedTask);
     if (user && user.role !== "guest") {
       const collectionPath = isTaskInTodos(updatedTask.id)
         ? "todos"
@@ -612,6 +603,7 @@ const ToDoList = ({
         "tilDone",
         "isRunning",
         "order",
+        "totalElapsedTime",
       ].reduce((acc, curr) => {
         if (updatedTask[curr] !== undefined) {
           acc[curr] = updatedTask[curr];
@@ -622,13 +614,35 @@ const ToDoList = ({
       try {
         await updateDoc(taskRef, fieldsToUpdate);
         console.log("Document updated successfully in Firestore");
+
+        // Update state
+        setTodos((prevTodos) =>
+          prevTodos.map((todo) =>
+            todo.id === updatedTask.id ? updatedTask : todo
+          )
+        );
+        setCompletedTodos((prevCompletedTodos) =>
+          prevCompletedTodos.map((completedTodo) =>
+            completedTodo.id === updatedTask.id ? updatedTask : completedTodo
+          )
+        );
       } catch (e) {
         console.error("Error updating document in Firestore: ", e);
       }
     } else {
       // If no user is authenticated, update the state and local storage directly
-      localStorage.setItem("todos", JSON.stringify(newTodos));
-      localStorage.setItem("completedTodos", JSON.stringify(newCompletedTodos));
+      setTodos((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === updatedTask.id ? updatedTask : todo
+        )
+      );
+      setCompletedTodos((prevCompletedTodos) =>
+        prevCompletedTodos.map((completedTodo) =>
+          completedTodo.id === updatedTask.id ? updatedTask : completedTodo
+        )
+      );
+      localStorage.setItem("todos", JSON.stringify(todos));
+      localStorage.setItem("completedTodos", JSON.stringify(completedTodos));
     }
   };
 
@@ -697,6 +711,7 @@ const ToDoList = ({
       order: todos.length - 1, // Insert the new task second from the very bottom
       column: "column-1",
       isSpecial: false, // new tasks added by users are not special
+      totalElapsedTime: 1138,
     };
 
     if (auth.currentUser) {
@@ -795,6 +810,14 @@ const ToDoList = ({
   };
 
   const handleVolumeChange = (event, newValue) => {
+    if (newValue === 0) {
+      setMuted(true);
+    } else {
+      if (muted) {
+        setMuted(false);
+      }
+      setPreviousVolume(newValue);
+    }
     setVolume(newValue);
   };
 
@@ -814,14 +837,28 @@ const ToDoList = ({
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-end",
                 alignItems: "center",
               }}
             >
-              <button style={{ backgroundColor: "transparent" }}>
-                <BsVolumeUpFill size={30} />
+              <button
+                style={{ backgroundColor: "transparent" }}
+                onClick={() => {
+                  if (!muted) {
+                    setVolume(0);
+                  } else {
+                    setVolume(previousVolume);
+                  }
+                  setMuted(!muted);
+                }}
+              >
+                {muted ? (
+                  <BsVolumeMuteFill size={30} />
+                ) : (
+                  <BsVolumeUpFill size={30} />
+                )}
               </button>
-              <div style={{ width: "100%" }}>
+              <div style={{ width: 225 }}>
                 {" "}
                 {/* Slider Container */}
                 <StyledSlider
@@ -861,6 +898,9 @@ const ToDoList = ({
                     todos={todos}
                     setTodos={setTodos}
                     isSpecial={todo.isSpecial}
+                    elapsedTime={todo.elapsedTime}
+                    setElapsedTime={setElapsedTime}
+                    totalElapsedTime={todo.totalElapsedTime}
                   />
                 ))}
                 {provided.placeholder}
@@ -891,6 +931,9 @@ const ToDoList = ({
                     setRunningTaskIndex={setRunningTaskIndex}
                     isTaskInTodos={isTaskInTodos}
                     draggableId={todo.id.toString()}
+                    elapsedTime={todo.elapsedTime}
+                    setElapsedTime={setElapsedTime}
+                    totalElapsedTime={todo.totalElapsedTime}
                   />
                 ))}
                 {provided.placeholder}

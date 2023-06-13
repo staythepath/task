@@ -3,7 +3,12 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItemRun from "../components/ToDoItemRun";
-import { BsPlayFill, BsPauseFill, BsVolumeUpFill } from "react-icons/bs";
+import {
+  BsPlayFill,
+  BsPauseFill,
+  BsVolumeUpFill,
+  BsVolumeMuteFill,
+} from "react-icons/bs";
 import { IconContext } from "react-icons";
 
 import { auth, db } from "../config/firebase";
@@ -47,6 +52,8 @@ const ToDoRun = ({
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [previousVolume, setPreviousVolume] = useState(20);
 
   let userId = auth.currentUser.uid;
 
@@ -288,6 +295,14 @@ const ToDoRun = ({
   };
 
   const handleVolumeChange = (event, newValue) => {
+    if (newValue === 0) {
+      setMuted(true);
+    } else {
+      if (muted) {
+        setMuted(false);
+      }
+      setPreviousVolume(newValue);
+    }
     setVolume(newValue);
   };
 
@@ -347,10 +362,23 @@ const ToDoRun = ({
             }}
           >
             <button
-              style={{ backgroundColor: "transparent", marginRight: "0px" }}
+              style={{ backgroundColor: "transparent" }}
+              onClick={() => {
+                if (!muted) {
+                  setVolume(0);
+                } else {
+                  setVolume(previousVolume);
+                }
+                setMuted(!muted);
+              }}
             >
-              <BsVolumeUpFill size={30} />
+              {muted ? (
+                <BsVolumeMuteFill size={30} />
+              ) : (
+                <BsVolumeUpFill size={30} />
+              )}
             </button>
+
             <div style={{ width: 325 }}>
               {" "}
               {/* Slider Container */}

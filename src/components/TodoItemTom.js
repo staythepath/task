@@ -255,34 +255,6 @@ const TodoItemTom = ({
     opacity: 0.5,
   };
 
-  const toggleTimer = () => {
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
-    setIsRunning(!isRunning);
-
-    if (isRunning) {
-      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
-      setRunningTaskIndex(-1);
-    } else if (isTaskInTodos(id)) {
-      playBell();
-      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
-      setRunningTaskIndex(index);
-    }
-  };
-
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(primaryDuration);
-    setIsPrimary(true);
-    setElapsedTime(0);
-  };
-
   return (
     <Draggable draggableId={draggableId} index={index}>
       {(provided) => (

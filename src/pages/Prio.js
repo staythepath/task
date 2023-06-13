@@ -124,10 +124,16 @@ function Prio({ todos, setTodos }) {
     newState.columnOrder.forEach((columnId) => {
       const column = newState.columns[columnId];
 
-      // Iterate over all tasaks in the current column in their order
+      // Iterate over all tasks in the current column in their order
       column.taskIds.forEach((taskId) => {
         // Find the corresponding todo in the original todos array
         const todo = todos.find((todo) => todo.id === taskId);
+
+        // If it's one of the tasks that should stay in their place, don't change their order and column
+        if (todo.order === -1 || todo.order === 999) {
+          newTodos.push(todo);
+          return;
+        }
 
         // Create a new todo with the updated order and column
         const newTodo = {
@@ -153,13 +159,16 @@ function Prio({ todos, setTodos }) {
   const onDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
 
-    // dropped outside the list
+    // Dropped outside the list
     if (!destination) {
       return;
     }
 
     const start = data.columns[source.droppableId];
     const finish = data.columns[destination.droppableId];
+
+    // Make a new copy of state
+    const newData = JSON.parse(JSON.stringify(data));
 
     // Moving in the same list
     if (start === finish) {
@@ -173,9 +182,9 @@ function Prio({ todos, setTodos }) {
       };
 
       const newState = {
-        ...data,
+        ...newData,
         columns: {
-          ...data.columns,
+          ...newData.columns,
           [newColumn.id]: newColumn,
         },
       };
@@ -205,9 +214,9 @@ function Prio({ todos, setTodos }) {
     };
 
     const newState = {
-      ...data,
+      ...newData,
       columns: {
-        ...data.columns,
+        ...newData.columns,
         [newStart.id]: newStart,
         [newFinish.id]: newFinish,
       },
@@ -255,7 +264,11 @@ function Prio({ todos, setTodos }) {
       <div className="priority-columns-container">
         {columnOrder.map((columnId) => {
           const column = columns[columnId];
-          const tasksInColumn = column.taskIds.map((taskId) => tasks[taskId]);
+          const tasksInColumn = column.taskIds
+            .filter((taskId) => {
+              return taskId !== "end" && taskId !== "start";
+            })
+            .map((taskId) => tasks[taskId]);
 
           let className;
           switch (columnId) {
