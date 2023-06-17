@@ -6,6 +6,7 @@ import ToDoItem from "../components/ToDoItem";
 import NewTaskForm from "../components/NewTaskForm";
 import { BsVolumeUpFill, BsVolumeMuteFill } from "react-icons/bs";
 import { auth, db } from "../config/firebase";
+
 import {
   addDoc,
   collection,
@@ -134,7 +135,6 @@ const ToDoList = ({
           });
 
           console.log("Here is tasksData before the setTodos", tasksData);
-
           await setTodos(tasksData);
 
           console.log("Here is tasksData after the setTodos", tasksData);
@@ -237,6 +237,20 @@ const ToDoList = ({
     // Clean up the auth listener on unmount
     return () => unsubscribeAuth();
   }, [fetchTasks, setCompletedTodos, setTodos]);
+
+  const handleElapsedTimeUpdate = (taskId, elapsedTime) => {
+    // Update the elapsedTime state in the parent component using the taskId and elapsedTime values
+    // Example implementation:
+    // Assuming todos and completedTodos are the state variables holding the task objects
+    const updatedTodos = todos.map((task) =>
+      task.id === taskId ? { ...task, totalElapsedTime: elapsedTime } : task
+    );
+    const updatedCompletedTodos = completedTodos.map((task) =>
+      task.id === taskId ? { ...task, totalElapsedTime: elapsedTime } : task
+    );
+    setTodos(updatedTodos);
+    setCompletedTodos(updatedCompletedTodos);
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -365,9 +379,8 @@ const ToDoList = ({
             ...updatedTask,
             isRunning: false,
             order: null,
-            totalElapsedTime: elapsedTime,
           };
-          setElapsedTime(0);
+
           // Check if the task already exists in completedTodos before adding
           if (!completedTodos.find((task) => task.id === completedTask.id)) {
             setCompletedTodos([...completedTodos, completedTask]);
@@ -899,8 +912,11 @@ const ToDoList = ({
                     setTodos={setTodos}
                     isSpecial={todo.isSpecial}
                     elapsedTime={todo.elapsedTime}
-                    setElapsedTime={setElapsedTime}
+                    setElapsedTime={(elapsedTime) =>
+                      handleElapsedTimeUpdate(todo.id, elapsedTime)
+                    }
                     totalElapsedTime={todo.totalElapsedTime}
+                    handleElapsedTimeUpdate={handleElapsedTimeUpdate}
                   />
                 ))}
                 {provided.placeholder}

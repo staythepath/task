@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import { auth } from "../config/firebase";
+import { useTimer, useStopwatch } from "react-use-precision-timer";
 
 const ToDoItem = ({
   id,
@@ -25,6 +26,7 @@ const ToDoItem = ({
   elapsedTime,
   setElapsedTime,
   totalElapsedTime,
+  handleElapsedTimeUpdate,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -42,9 +44,21 @@ const ToDoItem = ({
   const [cyclesFocused, setCyclesFocused] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
+  const [hasStarted, setHasStarted] = useState(false);
+
   const timeoutId = useRef(null);
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
+  const stopwatch = useStopwatch();
+
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      audio.volume = volume / 100;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -52,212 +66,194 @@ const ToDoItem = ({
   }, [initialPrimaryDuration, initialSecondaryDuration]);
 
   useEffect(() => {
-    if (!tilDone || tilDone) {
-      setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
-    } else {
-      setTimeLeft(0);
-    }
-  }, [primaryDuration, secondaryDuration, isPrimary, tilDone]);
-
-  useEffect(() => {
     if (index === runningTaskIndex && isTaskInTodos(id)) {
+      timer.start();
+      if (!hasStarted) {
+        stopwatch.start();
+        setHasStarted(true);
+      }
       setIsRunning(true);
+    } else {
+      timer.stop();
     }
   }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
 
-  const handleTaskCompletion = useCallback(() => {
-    console.log("from handleTaskCompletion", elapsedTime);
-    setIsRunning(false);
-
-    console.log("elapsedTime: ", elapsedTime);
-    const updatedTask = {
-      id,
-      index,
-      task,
-      primaryDuration,
-      secondaryDuration,
-      numCycles,
-      tilDone,
-      isRunning: false,
-      totalElapsedTime: elapsedTime, // use the state value here
-    };
-    console.log("from handleTaskCompletion", updatedTask);
-    handleUpdate(userId, updatedTask);
-    onToggle(id, true);
-
-    setElapsedTime(0);
-
-    //
-  }, [
-    elapsedTime,
-    setElapsedTime,
-    id,
-    index,
-    task,
-    primaryDuration,
-    secondaryDuration,
-    numCycles,
-    tilDone,
-    handleUpdate,
-    userId,
-    onToggle,
-  ]);
-
   useEffect(() => {
-    let timer;
-    if (isRunning) {
-      timer = setInterval(
-        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
-        1000
-      );
+    if (isPrimary) {
+      setTimeLeft(primaryDuration);
+    } else {
+      setTimeLeft(secondaryDuration);
     }
-    console.log("from elapsedTime useEFFECT", elapsedTime);
-    return () => clearInterval(timer);
-  }, [isRunning, elapsedTime, setElapsedTime]);
+  }, [primaryDuration, secondaryDuration, isPrimary]);
 
-  useEffect(() => {
-    let timer;
+  const updateElapsedTime = useCallback(() => {
+    const elapsed = stopwatch.getElapsedRunningTime();
+    setElapsedTime(elapsed);
+  }, [stopwatch, setElapsedTime]);
 
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
+  const timerCallback = useCallback(
+    (overdueCallCount) => {
+      setTimeLeft((prevTimeLeft) => {
+        let newTimeLeft = prevTimeLeft - 1;
 
-    const playApplause = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/applause.mp3");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playApplause(times - 1), 1000);
-      }
-    };
+        if (newTimeLeft === 0) {
+          playBell();
+          if (isPrimary) {
+            setIsPrimary(false);
+            newTimeLeft = secondaryDuration;
+          } else {
+            setCurrentCycle((currentCycle) => currentCycle + 1);
+            if (currentCycle + 1 === numCycles) {
+              // Update elapsed time before marking the task as complete
+              updateElapsedTime();
+              const updatedTask = {
+                id,
+                index,
+                task,
+                complete: !complete,
+                primaryDuration,
+                secondaryDuration,
+                numCycles,
+                tilDone,
+                isRunning: false,
+                totalElapsedTime: elapsedTime, // now, elapsedTime should be up-to-date
+              };
 
-    if (isRunning) {
-      console.log(timeLeft);
-      timer = setInterval(
-        () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-        1000
-      );
-
-      if (
-        timeLeft === 1 ||
-        (isPrimary ? primaryDuration : secondaryDuration) === 0
-      ) {
-        clearInterval(timer);
-        playBell();
-        if (isPrimary) {
-          setIsPrimary(false);
-          setTimeLeft(secondaryDuration);
-          // Check if we're about to start the last cycle with a secondary timer
-          if (currentCycle === numCycles - 1) {
-            playApplause();
-          }
-          timer = setInterval(
-            () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-            1000
-          );
-        } else {
-          setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-          setIsPrimary(!isPrimary);
-          setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-          if (currentCycle < numCycles - 1) {
-            timer = setInterval(
-              () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-              1000
-            );
-          } else if (!tilDone) {
-            console.log("from handleTaskCompletion");
-            handleTaskCompletion();
+              handleUpdate(userId, updatedTask).then(() => {
+                onToggle(id, !complete, elapsedTime);
+              });
+              resetTimer();
+            } else {
+              setIsPrimary(true);
+              newTimeLeft = primaryDuration;
+            }
           }
         }
+
+        return newTimeLeft;
+      });
+    },
+    // Add updateElapsedTime to the dependency array
+    [
+      secondaryDuration,
+      primaryDuration,
+      isPrimary,
+      numCycles,
+      currentCycle,
+      stopwatch,
+      updateElapsedTime,
+    ]
+  );
+
+  const timer = useTimer({ delay: 1000 }, timerCallback);
+
+  const toggleTimer = () => {
+    if (timer.isRunning()) {
+      timer.stop();
+      stopwatch.pause();
+      setIsRunning(false);
+      playBell();
+      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
+      setRunningTaskIndex(-1);
+    } else if (isTaskInTodos(id)) {
+      playBell();
+      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
+      setRunningTaskIndex(index);
+      timer.start();
+      if (hasStarted) {
+        stopwatch.resume();
+      } else {
+        stopwatch.start();
+        setHasStarted(true);
       }
+      setIsRunning(true);
     }
-    return () => clearInterval(timer);
-  }, [
-    isRunning,
-    primaryDuration,
-    secondaryDuration,
-    isPrimary,
-    currentCycle,
-    numCycles,
-    timeLeft,
-    tilDone,
-    handleUpdate,
-    id,
-    index,
-    onToggle,
-    task,
-    setRunningTaskIndex,
-    isTaskInTodos,
-    volume,
-    userId,
-    handleTaskCompletion,
-  ]);
+  };
+
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTimeLeft(primaryDuration);
+    setIsPrimary(true);
+    setElapsedTime(0);
+    stopwatch.stop();
+    setHasStarted(false);
+  };
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
   };
 
+  const handleTaskCompletion = useCallback(() => {
+    const updatedTask = {
+      id,
+      index,
+      task,
+      complete: !complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+      tilDone,
+      isRunning: false,
+      totalElapsedTime,
+    };
+
+    handleUpdate(userId, updatedTask).then(() => {
+      onToggle(id, !complete, elapsedTime); // Pass the elapsedTime value to the handleToggle function
+    });
+    resetTimer();
+  }, [
+    elapsedTime,
+    updateElapsedTime,
+    timer,
+    stopwatch,
+    handleUpdate,
+    userId,
+    onToggle,
+    id,
+    index,
+    task,
+    primaryDuration,
+    secondaryDuration,
+    numCycles,
+    tilDone,
+  ]);
+
+  useEffect(() => {
+    if (isRunning) {
+      // Start the stopwatch
+      stopwatch.resume();
+
+      // Create an interval that updates every second
+      const intervalId = setInterval(() => {
+        setElapsedTime(stopwatch.getElapsedRunningTime());
+      }, 1000);
+
+      // Clean up function to clear the interval when the component unmounts or isRunning changes to false
+      return () => {
+        clearInterval(intervalId);
+      };
+    } else {
+      // Stop the stopwatch and clear elapsed time when isRunning is false
+      stopwatch.pause();
+    }
+  }, [isRunning, stopwatch, setElapsedTime]);
+
   const updateTask = () => {
     setIsEditing(false);
-    console.log("elapsedTime from updateTask", elapsedTime);
-    if (!tilDone) {
-      console.log({
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning,
-        order,
-      });
-      handleUpdate(userId, {
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning,
-        order,
-        totalElapsedTime: elapsedTime,
-      });
-    } else {
-      console.log({
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles: 999,
-        tilDone,
-        order,
-        isRunning,
-      });
-      handleUpdate(userId, {
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles: 999,
-        tilDone,
-        isRunning,
-        order,
-        totalElapsedTime: elapsedTime,
-      });
-    }
+    const updatedTask = {
+      id,
+      index,
+      task,
+      complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles: tilDone ? 999 : numCycles,
+      tilDone,
+      isRunning,
+      order,
+      totalElapsedTime: elapsedTime,
+    };
+    handleUpdate(userId, updatedTask);
   };
 
   const handleMouseDown = (operation, value, setValue) => {
@@ -280,34 +276,6 @@ const ToDoItem = ({
   const crossedOutStyle = {
     textDecoration: "line-through",
     opacity: 0.5,
-  };
-
-  const toggleTimer = () => {
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
-    setIsRunning(!isRunning);
-
-    if (isRunning) {
-      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
-      setRunningTaskIndex(-1);
-    } else if (isTaskInTodos(id)) {
-      playBell();
-      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
-      setRunningTaskIndex(index);
-    }
-  };
-
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(primaryDuration);
-    setIsPrimary(true);
-    setElapsedTime(0);
   };
 
   return (
@@ -351,12 +319,13 @@ const ToDoItem = ({
                     numCycles,
                     tilDone,
                     isRunning: false,
-                    totalElapsedTime: elapsedTime,
+                    totalElapsedTime,
                   };
 
                   handleUpdate(userId, updatedTask).then(() => {
-                    onToggle(id, !complete);
+                    onToggle(id, !complete, elapsedTime); // Pass the elapsedTime value to the handleToggle function
                   });
+                  resetTimer();
                 }}
               />
 
@@ -722,13 +691,16 @@ const ToDoItem = ({
                 <input
                   type="text"
                   value={`${
-                    Math.floor(totalElapsedTime / 3600)
-                      ? Math.floor(totalElapsedTime / 3600) + ":"
+                    Math.floor(totalElapsedTime / (1000 * 60 * 60)) > 0
+                      ? String(
+                          Math.floor(totalElapsedTime / (1000 * 60 * 60))
+                        ).padStart(2, "0") + ":"
                       : ""
-                  }${String(Math.floor(totalElapsedTime / 60) % 60).padStart(
-                    2,
-                    "0"
-                  )}:${String(totalElapsedTime % 60).padStart(2, "0")}`}
+                  }${String(
+                    Math.floor(totalElapsedTime / (1000 * 60)) % 60
+                  ).padStart(2, "0")}:${String(
+                    Math.floor(totalElapsedTime / 1000) % 60
+                  ).padStart(2, "0")}`}
                   readOnly
                   className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
