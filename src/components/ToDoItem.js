@@ -42,6 +42,7 @@ const ToDoItem = ({
   const [cyclesFocused, setCyclesFocused] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
+  const [timer, setTimer] = useState(null);
   const timeoutId = useRef(null);
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
@@ -103,100 +104,94 @@ const ToDoItem = ({
     onToggle,
   ]);
 
+  // Countdown useEffect
   useEffect(() => {
-    let timer;
-    if (isRunning) {
-      timer = setInterval(
-        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
-        1000
-      );
+    if (isRunning && !timer) {
+      const interval = setInterval(() => {
+        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+        setElapsedTime((prevElapsedTime) => prevElapsedTime + 1);
+      }, 1000);
+
+      setTimer(interval);
+    } else if (!isRunning && timer) {
+      clearInterval(timer);
+      setTimer(null);
     }
-    console.log("from elapsedTime useEFFECT", elapsedTime);
-    return () => clearInterval(timer);
-  }, [isRunning, elapsedTime, setElapsedTime]);
 
-  useEffect(() => {
-    let timer;
-
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
-
-    const playApplause = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/applause.mp3");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playApplause(times - 1), 1000);
-      }
-    };
-
-    if (isRunning) {
-      console.log(timeLeft);
-      timer = setInterval(
-        () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-        1000
-      );
-
-      if (
-        timeLeft === 1 ||
-        (isPrimary ? primaryDuration : secondaryDuration) === 0
-      ) {
+    return () => {
+      if (timer) {
         clearInterval(timer);
-        playBell();
-        if (isPrimary) {
-          setIsPrimary(false);
-          setTimeLeft(secondaryDuration);
-          // Check if we're about to start the last cycle with a secondary timer
-          if (currentCycle === numCycles - 1) {
-            playApplause();
-          }
-          timer = setInterval(
-            () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-            1000
-          );
+        setTimer(null);
+      }
+    };
+  }, [isRunning, timer]);
+
+  // Timer logic useEffect
+  useEffect(() => {
+    if (timeLeft === 0) {
+      playBell();
+      if (isRunning) clearInterval(timer); // Clear interval before reassigning
+
+      if (isPrimary) {
+        setIsPrimary(false);
+        setTimeLeft(secondaryDuration);
+
+        // Check if it's the last primary cycle
+        if (currentCycle === numCycles - 1) {
+          playApplause();
+          // start secondary countdown even in the last cycle
+          const interval = setInterval(() => {
+            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+          }, 1000);
+
+          setTimer(interval);
         } else {
-          setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-          setIsPrimary(!isPrimary);
-          setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-          if (currentCycle < numCycles - 1) {
-            timer = setInterval(
-              () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-              1000
-            );
-          } else if (!tilDone) {
-            console.log("from handleTaskCompletion");
+          const interval = setInterval(() => {
+            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+          }, 1000);
+
+          setTimer(interval);
+        }
+      } else {
+        setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
+        setIsPrimary(!isPrimary);
+        setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
+
+        // Check if it's the last secondary cycle
+        if (currentCycle < numCycles - 1) {
+          const interval = setInterval(() => {
+            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
+          }, 1000);
+
+          setTimer(interval);
+        } else {
+          // if it's the last secondary cycle
+          // we allow the last secondary countdown to run before running handleTaskCompletion
+          if (timeLeft === 0 && currentCycle === numCycles - 1 && !isPrimary) {
             handleTaskCompletion();
           }
         }
       }
     }
-    return () => clearInterval(timer);
-  }, [
-    isRunning,
-    primaryDuration,
-    secondaryDuration,
-    isPrimary,
-    currentCycle,
-    numCycles,
-    timeLeft,
-    tilDone,
-    handleUpdate,
-    id,
-    index,
-    onToggle,
-    task,
-    setRunningTaskIndex,
-    isTaskInTodos,
-    volume,
-    userId,
-    handleTaskCompletion,
-  ]);
+  }, [timeLeft, isRunning]);
+
+  const resetTimer = () => {
+    setIsRunning(false);
+    setTimeLeft(primaryDuration);
+    setIsPrimary(true);
+    setElapsedTime(0);
+  };
+
+  const formatTime = (time) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor(time / 60) % 60;
+    const seconds = time % 60;
+
+    return `${hours ? hours + ":" : ""}${String(minutes).padStart(
+      2,
+      "0"
+    )}:${String(seconds).padStart(2, "0")}`;
+  };
 
   const toggleEdit = () => {
     setIsEditing(!isEditing);
@@ -303,11 +298,24 @@ const ToDoItem = ({
     }
   };
 
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(primaryDuration);
-    setIsPrimary(true);
-    setElapsedTime(0);
+  const playBell = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/boxingbell.wav");
+      // Check if volume is finite, if not set a default value
+      audio.volume = isFinite(volume) ? volume / 100 : 0.5;
+      audio.play();
+      setTimeout(() => playBell(times - 1), 1000);
+    }
+  };
+
+  const playApplause = (times = 1) => {
+    if (times > 0) {
+      const audio = new Audio("/applause.mp3");
+      // Check if volume is finite, if not set a default value
+      audio.volume = isFinite(volume) ? volume / 100 : 0.5;
+      audio.play();
+      setTimeout(() => playApplause(times - 1), 1000);
+    }
   };
 
   return (
@@ -680,14 +688,7 @@ const ToDoItem = ({
                   {tilDone ? (
                     <input
                       type="text"
-                      value={`${
-                        Math.floor(elapsedTime / 3600)
-                          ? Math.floor(elapsedTime / 3600) + ":"
-                          : ""
-                      }${String(Math.floor(elapsedTime / 60) % 60).padStart(
-                        2,
-                        "0"
-                      )}:${String(elapsedTime % 60).padStart(2, "0")}`}
+                      value={formatTime(timeLeft)}
                       readOnly
                       className={isRunning ? "isRunningCountdown" : "countdown"}
                       style={{
@@ -700,14 +701,7 @@ const ToDoItem = ({
                   ) : (
                     <input
                       type="text"
-                      value={`${
-                        Math.floor(timeLeft / 3600)
-                          ? Math.floor(timeLeft / 3600) + ":"
-                          : ""
-                      }${String(Math.floor(timeLeft / 60) % 60).padStart(
-                        2,
-                        "0"
-                      )}:${String(timeLeft % 60).padStart(2, "0")}`}
+                      value={formatTime(timeLeft)}
                       readOnly
                       className={isRunning ? "isRunningCountdown" : "countdown"}
                       style={{
@@ -721,14 +715,7 @@ const ToDoItem = ({
               ) : (
                 <input
                   type="text"
-                  value={`${
-                    Math.floor(totalElapsedTime / 3600)
-                      ? Math.floor(totalElapsedTime / 3600) + ":"
-                      : ""
-                  }${String(Math.floor(totalElapsedTime / 60) % 60).padStart(
-                    2,
-                    "0"
-                  )}:${String(totalElapsedTime % 60).padStart(2, "0")}`}
+                  value={formatTime(totalElapsedTime)}
                   readOnly
                   className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
