@@ -47,6 +47,32 @@ const ToDoItem = ({
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
 
+  const playBell = useCallback(
+    (times = 1) => {
+      if (times > 0) {
+        const audio = new Audio("/boxingbell.wav");
+        // Check if volume is finite, if not set a default value
+        audio.volume = isFinite(volume) ? volume / 100 : 0.5;
+        audio.play();
+        setTimeout(() => playBell(times - 1), 1000);
+      }
+    },
+    [volume]
+  );
+
+  const playApplause = useCallback(
+    (times = 1) => {
+      if (times > 0) {
+        const audio = new Audio("/applause.mp3");
+        // Check if volume is finite, if not set a default value
+        audio.volume = isFinite(volume) ? volume / 100 : 0.5;
+        audio.play();
+        setTimeout(() => playApplause(times - 1), 1000);
+      }
+    },
+    [volume]
+  );
+
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
     setSecondaryDuration(initialSecondaryDuration);
@@ -124,7 +150,7 @@ const ToDoItem = ({
         setTimer(null);
       }
     };
-  }, [isRunning, timer]);
+  }, [isRunning, timer, setElapsedTime]);
 
   // Timer logic useEffect
   useEffect(() => {
@@ -173,7 +199,19 @@ const ToDoItem = ({
         }
       }
     }
-  }, [timeLeft, isRunning]);
+  }, [
+    timeLeft,
+    isRunning,
+    currentCycle,
+    numCycles,
+    isPrimary,
+    timer,
+    handleTaskCompletion,
+    secondaryDuration,
+    primaryDuration,
+    playBell,
+    playApplause,
+  ]);
 
   const resetTimer = () => {
     setIsRunning(false);
@@ -295,26 +333,6 @@ const ToDoItem = ({
       playBell();
       // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
       setRunningTaskIndex(index);
-    }
-  };
-
-  const playBell = (times = 1) => {
-    if (times > 0) {
-      const audio = new Audio("/boxingbell.wav");
-      // Check if volume is finite, if not set a default value
-      audio.volume = isFinite(volume) ? volume / 100 : 0.5;
-      audio.play();
-      setTimeout(() => playBell(times - 1), 1000);
-    }
-  };
-
-  const playApplause = (times = 1) => {
-    if (times > 0) {
-      const audio = new Audio("/applause.mp3");
-      // Check if volume is finite, if not set a default value
-      audio.volume = isFinite(volume) ? volume / 100 : 0.5;
-      audio.play();
-      setTimeout(() => playApplause(times - 1), 1000);
     }
   };
 
