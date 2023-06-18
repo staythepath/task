@@ -17,6 +17,7 @@ const ToDoItemRun = ({
   volume,
   isRunning,
   setIsRunning,
+  totalElapsedTime,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -30,8 +31,6 @@ const ToDoItemRun = ({
 
   const [currentCycle, setCurrentCycle] = useState(0);
   const numCycles = initialNumCycles;
-
-  const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -51,19 +50,6 @@ const ToDoItemRun = ({
       setIsRunning(true);
     }
   }, [runningTaskIndex, index, tilDone, isTaskInTodos, id, setIsRunning]);
-
-  useEffect(() => {
-    let timer;
-
-    if (isRunning && tilDone) {
-      timer = setInterval(
-        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
-        1000
-      );
-    }
-
-    return () => clearInterval(timer);
-  }, [isRunning, tilDone]);
 
   useEffect(() => {
     let timer;
@@ -163,10 +149,15 @@ const ToDoItemRun = ({
     opacity: 0.5,
   };
 
-  const countdownDisplayStyle = {
-    width: "2.5rem",
-    textAlign: "center",
-    paddingRight: "24rem",
+  const formatTime = (time) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor(time / 60) % 60;
+    const seconds = time % 60;
+
+    return `${hours ? hours + ":" : ""}${String(minutes).padStart(
+      2,
+      "0"
+    )}:${String(seconds).padStart(2, "0")}`;
   };
 
   return (
@@ -198,31 +189,26 @@ const ToDoItemRun = ({
               />
             )}
           </div>
-          <div className="countdownRun">
+          <div className="countdown">
             {tilDone ? (
               <input
                 type="text"
-                value={`${Math.floor(elapsedTime / 60)}:${String(
-                  elapsedTime % 60
-                ).padStart(2, "0")}`}
+                value={formatTime(totalElapsedTime)}
                 readOnly
-                className={isRunning ? "isRunningCountdown" : ""}
+                className={isRunning ? "isRunningCountdown" : "countdown"}
                 style={{
                   width: "100%",
                   textAlign: "center",
                   marginLeft: ".5rem",
-                  marginRight: "1rem",
                 }}
               />
             ) : (
-              <div style={countdownDisplayStyle}>
+              <div className="countdown">
                 <input
                   type="text"
-                  value={
-                    ((primaryDuration + secondaryDuration) * numCycles) / 60 +
-                    ":00"
-                  }
+                  value={formatTime(totalElapsedTime)}
                   readOnly
+                  className={isRunning ? "isRunningCountdown" : "countdown"}
                   style={{
                     width: "100%",
                     textAlign: "center",

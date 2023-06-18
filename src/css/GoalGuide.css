@@ -1,0 +1,106 @@
+/* GoalGuide.css */
+
+.ToDoList {
+  padding-top: 80px;
+  font-family: Arial, sans-serif;
+}
+
+.MuiStepLabel-label.stepLabel {
+  color: rgb(255, 255, 255) !important;
+  background-color: rgb(255, 255, 255) !important;
+  font-weight: bold;
+}
+
+.MuiStepLabel-label {
+  color: darkgrey;
+}
+
+.MuiStepIcon-root {
+  color: rgb(112, 112, 112) !important;
+  font-family: Arial, sans-serif;
+  text-transform: none;
+}
+
+.Mui-active {
+  color: rgba(3, 214, 3, 0.493) !important;
+  font-family: Arial, sans-serif;
+  text-transform: none;
+}
+
+.Mui-completed {
+  color: rgba(3, 214, 3, 0.493) !important;
+  font-family: Arial, sans-serif;
+  text-transform: none;
+}
+
+.MuiTypography-root.stepContent {
+  font-family: Arial, sans-serif;
+  text-transform: none;
+  color: darkgray;
+}
+
+.MuiButton-root {
+  font-family: Arial, sans-serif;
+  text-transform: none;
+}
+
+.MuiButton-root.stepButton {
+  background-color: rgba(3, 214, 3, 0.493);
+  margin-top: 1rem;
+  margin-right: 1rem;
+}
+
+.MuiButton-root.stepButton:hover {
+  background-color: rgba(0, 100, 0, 0.541);
+}
+
+.MuiButton-root.backButton {
+  background-color: #66666667;
+  color: rgba(255, 255, 255, 0.527);
+  margin-top: 1rem;
+  margin-right: 1rem;
+}
+
+.MuiButton-root.backButton:hover {
+  background-color: rgba(190, 1, 1, 0.527);
+}
+
+.MuiButton-root.resetButton {
+  background-color: orange;
+  margin-top: 1rem;
+  margin-right: 1rem;
+}
+
+.MuiButton-root.resetButton:hover {
+  background-color: darkorange;
+}
+
+.MuiInputLabel-outlined {
+  color: rgba(255, 255, 255, 0.527);
+  outline: rgba(255, 255, 255, 0.527);
+}
+
+.MuiInputLabel-outlined.Mui-focused {
+  color: rgba(255, 255, 255, 0.527);
+  outline: rgba(255, 255, 255, 0.527);
+}
+
+.MuiTextField-root {
+  color: rgba(255, 255, 255, 0.527) !important;
+  outline: rgba(255, 255, 255, 0.527);
+}
+
+.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.527);
+}
+
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.527);
+}
+
+.MuiStepConnector-vertical {
+  padding-left: 1rem;
+}
+.MuiStepConnector-vertical.Mui-active {
+  padding-left: 1rem;
+}

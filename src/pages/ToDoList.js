@@ -17,6 +17,7 @@ import {
   onSnapshot,
   setDoc,
   getDocs,
+  where,
 } from "firebase/firestore";
 
 const StyledSlider = styled(Slider)({
@@ -241,9 +242,15 @@ const ToDoList = ({
   useEffect(() => {
     if (currentUser) {
       const startTaskId = "start";
-      const startTaskRef = doc(
+
+      const todoListRef = collection(
         db,
-        `users/${currentUser.uid}/todoLists/${todoListId}/todos/${startTaskId}`
+        `users/${currentUser.uid}/todoLists/${todoListId}/todos`
+      );
+
+      const completedTodoListRef = collection(
+        db,
+        `users/${currentUser.uid}/todoLists/${todoListId}/completedTodos`
       );
 
       const specialOrder = -1;
@@ -265,29 +272,45 @@ const ToDoList = ({
         user: currentUser.uid,
       };
 
+      const checkStartTaskExists = async () => {
+        const todoSnapshot = await getDocs(
+          query(todoListRef, where("id", "==", startTaskId))
+        );
+        const completedTodoSnapshot = await getDocs(
+          query(completedTodoListRef, where("id", "==", startTaskId))
+        );
+        return !todoSnapshot.empty || !completedTodoSnapshot.empty;
+      };
+
       const addSpecialTaskToFirebase = async () => {
+        const startTaskRef = doc(
+          db,
+          `users/${currentUser.uid}/todoLists/${todoListId}/todos/${startTaskId}`
+        );
         await setDoc(startTaskRef, startTask);
       };
 
-      const startTaskExists = [...todos, ...completedTodos].some(
-        (task) => task.id === startTask.id
-      );
-
-      if (!startTaskExists) {
-        setTodos((prevTodos) => [startTask, ...prevTodos]);
-        addSpecialTaskToFirebase();
-      }
+      checkStartTaskExists().then((exists) => {
+        if (!exists) {
+          setTodos((prevTodos) => [startTask, ...prevTodos]);
+          addSpecialTaskToFirebase();
+        }
+      });
     }
-  }, [currentUser, todos, completedTodos, setTodos]);
+  }, [currentUser, setTodos]);
 
   useEffect(() => {
     if (currentUser) {
-      // Create a new Date object for the current date/time
-
       const endTaskId = "end";
-      const endTaskRef = doc(
+
+      const todoListRef = collection(
         db,
-        `users/${currentUser.uid}/todoLists/${todoListId}/todos/${endTaskId}`
+        `users/${currentUser.uid}/todoLists/${todoListId}/todos`
+      );
+
+      const completedTodoListRef = collection(
+        db,
+        `users/${currentUser.uid}/todoLists/${todoListId}/completedTodos`
       );
 
       const specialOrder = 999;
@@ -309,20 +332,32 @@ const ToDoList = ({
         user: currentUser.uid,
       };
 
+      const checkEndTaskExists = async () => {
+        const todoSnapshot = await getDocs(
+          query(todoListRef, where("id", "==", endTaskId))
+        );
+        const completedTodoSnapshot = await getDocs(
+          query(completedTodoListRef, where("id", "==", endTaskId))
+        );
+        return !todoSnapshot.empty || !completedTodoSnapshot.empty;
+      };
+
       const addSpecialTaskToFirebase = async () => {
+        const endTaskRef = doc(
+          db,
+          `users/${currentUser.uid}/todoLists/${todoListId}/todos/${endTaskId}`
+        );
         await setDoc(endTaskRef, endTask);
       };
 
-      const endTaskExists = [...todos, ...completedTodos].some(
-        (task) => task.id === endTask.id
-      );
-
-      if (!endTaskExists) {
-        setTodos((prevTodos) => [endTask, ...prevTodos]);
-        addSpecialTaskToFirebase();
-      }
+      checkEndTaskExists().then((exists) => {
+        if (!exists) {
+          setTodos((prevTodos) => [endTask, ...prevTodos]);
+          addSpecialTaskToFirebase();
+        }
+      });
     }
-  }, [currentUser, todos, completedTodos, setTodos]);
+  }, [currentUser, setTodos]);
 
   const playApplause = (times = 1) => {
     if (times > 0) {

@@ -742,3 +742,7 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
     height: 45px; /* specify a height to ensure the text is centered vertically */
   }
 }
+
+.muiStepLabel-root {
+  color: #ffffff;
+}

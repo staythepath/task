@@ -76,56 +76,56 @@ const Day = () => {
   }, [user, formattedSelectedDate]);
 
   return (
-    <div className="outer-div">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h2>{selectedDate.toDateString()}</h2>
-        <h2>{journals.length ? "Day Complete!" : "Day Incomplete"}</h2>
-      </div>
-      <h3>Incomplete Tasks</h3>
-      {tasks.map((task, index) => (
-        <ToDoItemDay
-          key={index}
-          {...task}
-          // Provide other required props for ToDoItemRun
-        />
-      ))}
-      <h3>Completed Tasks</h3> {/* New heading for completed tasks */}
-      {completedTasks.map((task, index) => (
-        <ToDoItemDay
-          key={index}
-          {...task}
-          // Provide other required props for ToDoItemRun
-          // Maybe include a prop to change styling for completed tasks
-        />
-      ))}
-      <h3>Journal</h3>
-      {journals.map(
-        (
-          journal,
-          index // Change this line
-        ) => (
+    <div
+      className="outer-div"
+      style={{ display: "flex", justifyContent: "center" }}
+    >
+      <div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h2>{selectedDate.toDateString()}</h2>
+          <h2>{journals.length ? "Day Complete!" : "Day Incomplete"}</h2>
+        </div>
+        <h3>Incomplete Tasks</h3>
+        {tasks.map((task, index) => (
+          <ToDoItemDay
+            key={index}
+            {...task}
+            // Provide other required props for ToDoItemRun
+          />
+        ))}
+        <h3>Completed Tasks</h3> {/* New heading for completed tasks */}
+        {completedTasks.map((task, index) => (
+          <ToDoItemDay
+            key={index}
+            {...task}
+            // Provide other required props for ToDoItemRun
+            // Maybe include a prop to change styling for completed tasks
+          />
+        ))}
+        <h3>Journal</h3>
+        {journals.map((journal, index) => (
           <pre
             key={index}
             style={{
               margin: "1px",
+              marginLeft: "15%",
               fontSize: "16px",
-              textAlign: "left",
               whiteSpace: "pre-wrap",
               wordWrap: "break-word",
-              width: "70%", // Adjust to your desired width
+              paddingBottom: "40px",
+              width: "70%",
             }}
           >
             {journal.Entry}
           </pre>
-          // Change this line, assuming "Entry" is the journal entry text
-        )
-      )}
+        ))}
+      </div>
     </div>
   );
 };
