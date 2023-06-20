@@ -348,11 +348,13 @@ const ToDoItem = ({
           {...provided.dragHandleProps}
           className={
             isRunning
-              ? isEditing
-                ? "isRunning-isEditingTask"
-                : "isRunning"
+              ? isPrimary
+                ? isEditing
+                  ? "isRunning-isEditingTask"
+                  : "isRunning"
+                : "isRunningNotPrimary"
               : isEditing
-              ? " task-isEditingTask"
+              ? "task-isEditingTask"
               : "task"
           }
           //        className={ isRunning ? { isEditing ? 'isRunning-isEditingTask' : "isRunning-task"} : {isEditing ? "editing-task" : "task"}}
@@ -361,7 +363,9 @@ const ToDoItem = ({
             <label
               className={
                 isRunning
-                  ? "isRunning-checkbox-container"
+                  ? isPrimary
+                    ? "isRunning-checkbox-container"
+                    : "isRunning-checkbox-container-notPrimary"
                   : "checkbox-container"
               }
             >
@@ -417,8 +421,12 @@ const ToDoItem = ({
                 marginRight: "15px",
 
                 minWidth: "2rem",
-                backgroundColor: isRunning ? "#abf296" : "#66666667",
-                color: isRunning ? "#227f08" : "",
+                backgroundColor: isRunning
+                  ? isPrimary
+                    ? "#abf296"
+                    : "#0000FF"
+                  : "#66666667",
+                color: isRunning ? (isPrimary ? "#227f08" : "white") : "",
               }}
             />
           ) : (
@@ -442,7 +450,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn-plus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn-plus"
+                          : "isRunning-timer-change-btn-plus-notPrimary"
                         : "timer-change-btn timer-change-btn-plus"
                     }
                     onMouseDown={() =>
@@ -467,7 +477,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                          : "isRunning-timer-change-btn-minus-notPrimary"
                         : "timer-change-btn timer-change-btn-minus"
                     }
                     onMouseDown={() =>
@@ -501,17 +513,25 @@ const ToDoItem = ({
                     onChange={(e) => setNumCycles(parseInt(e.target.value))}
                     className={
                       isRunning && primaryDurationFocused
-                        ? "isRunning-timer-input"
+                        ? isPrimary
+                          ? "isRunning-timer-input"
+                          : "isRunning-timer-input-notPrimary"
                         : "number-input"
                     }
                     style={{
                       borderColor: cyclesFocused ? "#666" : "#666",
                       backgroundColor: cyclesFocused
-                        ? isRunning
+                        ? !isRunning
+                          ? "#66666667"
+                          : isPrimary
                           ? "#abf296"
+                          : "#0000FF"
+                        : isRunning
+                        ? !isPrimary
+                          ? "#19dbf5"
                           : "#66666667"
                         : "#66666667",
-                      color: isRunning ? "#227f08" : "",
+                      color: isRunning ? (isPrimary ? "#227f08" : "white") : "",
                     }}
                     onFocus={() => setCyclesFocused(true)}
                     onBlur={() => {
@@ -550,7 +570,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn-plus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn-plus"
+                          : "isRunning-timer-change-btn-plus-notPrimary"
                         : "timer-change-btn timer-change-btn-plus"
                     }
                     onMouseDown={(e) => {
@@ -568,7 +590,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                          : "isRunning-timer-change-btn-minus-notPrimary"
                         : "timer-change-btn timer-change-btn-minus"
                     }
                     onMouseDown={(e) => {
@@ -609,9 +633,15 @@ const ToDoItem = ({
                       backgroundColor: primaryDurationFocused
                         ? !isRunning
                           ? "#66666667"
-                          : "#abf296"
+                          : isPrimary
+                          ? "#abf296"
+                          : "#0000FF"
+                        : isRunning
+                        ? !isPrimary
+                          ? "#19dbf5"
+                          : "#66666667"
                         : "#66666667",
-                      color: isRunning ? "#227f08" : "",
+                      color: isRunning ? (isPrimary ? "#227f08" : "white") : "",
                     }}
                     onFocus={() => setPrimaryDurationFocused(true)}
                     onBlur={() => {
@@ -624,7 +654,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn-plus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn-plus"
+                          : "isRunning-timer-change-btn-plus-notPrimary"
                         : "timer-change-btn timer-change-btn-plus"
                     }
                     onMouseDown={(e) => {
@@ -643,7 +675,9 @@ const ToDoItem = ({
                   <button
                     className={
                       isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                        ? isPrimary
+                          ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
+                          : "isRunning-timer-change-btn-minus-notPrimary"
                         : "timer-change-btn timer-change-btn-minus"
                     }
                     onMouseDown={(e) => {
@@ -687,9 +721,15 @@ const ToDoItem = ({
                       backgroundColor: secondaryDurationFocused
                         ? !isRunning
                           ? "#66666667"
-                          : "#abf296"
+                          : isPrimary
+                          ? "#abf296"
+                          : "#0000FF"
+                        : isRunning
+                        ? !isPrimary
+                          ? "#19dbf5"
+                          : "#66666667"
                         : "#66666667",
-                      color: isRunning ? "#227f08" : "",
+                      color: isRunning ? (isPrimary ? "#227f08" : "white") : "",
                     }}
                     onFocus={() => setSecondaryDurationFocused(true)}
                     onBlur={() => {
@@ -713,7 +753,11 @@ const ToDoItem = ({
                         value={formatTime(elapsedShow)}
                         readOnly
                         className={
-                          isRunning ? "isRunningCountdown" : "countdown"
+                          isRunning
+                            ? isPrimary
+                              ? "isRunningCountdown"
+                              : "isRunningCountdown-notPrimary"
+                            : "countdown"
                         }
                         style={{
                           width: "100%",
@@ -728,7 +772,13 @@ const ToDoItem = ({
                       type="text"
                       value={formatTime(timeLeft)}
                       readOnly
-                      className={isRunning ? "isRunningCountdown" : "countdown"}
+                      className={
+                        isRunning
+                          ? isPrimary
+                            ? "isRunningCountdown"
+                            : "isRunningCountdown-notPrimary"
+                          : "countdown"
+                      }
                       style={{
                         width: "100%",
                         textAlign: "center",
@@ -760,7 +810,11 @@ const ToDoItem = ({
                       <button
                         onClick={toggleTimer}
                         className={
-                          isRunning ? "isRunning-button" : "notRunning-button"
+                          isRunning
+                            ? isPrimary
+                              ? "isRunning-button"
+                              : "isRunning-button-notPrimary"
+                            : "notRunning-button"
                         }
                       >
                         {isRunning ? "Pause" : "Start"}
@@ -771,7 +825,11 @@ const ToDoItem = ({
                       onClick={resetTimer}
                       style={{ marginLeft: "1rem" }}
                       className={
-                        isRunning ? "isRunning-button" : "notRunning-button"
+                        isRunning
+                          ? isPrimary
+                            ? "isRunning-button"
+                            : "isRunning-button-notPrimary"
+                          : "notRunning-button"
                       }
                     >
                       Reset
@@ -782,7 +840,11 @@ const ToDoItem = ({
                         onClick={onDelete}
                         style={{ marginLeft: "1rem" }}
                         className={
-                          isRunning ? "isRunning-button" : "notRunning-button"
+                          isRunning
+                            ? isPrimary
+                              ? "isRunning-button"
+                              : "isRunning-button-notPrimary"
+                            : "notRunning-button"
                         }
                       >
                         Delete
@@ -795,7 +857,11 @@ const ToDoItem = ({
                   <button
                     onClick={isEditing ? updateTask : toggleEdit}
                     className={
-                      isRunning ? "isRunning-button" : "notRunning-button"
+                      isRunning
+                        ? isPrimary
+                          ? "isRunning-button"
+                          : "isRunning-button-notPrimary"
+                        : "notRunning-button"
                     }
                     style={{ marginLeft: "1rem", textAlign: "center" }}
                   >

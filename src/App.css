@@ -388,6 +388,20 @@ span {
   z-index: 10;
 }
 
+.isRunning-checkbox-container-notPrimary {
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 23px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  z-index: 10;
+}
+
 /* On mouse-over, add a grey background color */
 .checkbox-container:hover input ~ .checkbox {
   background-color: #131225;
@@ -442,6 +456,13 @@ span {
   height: 0;
   width: 0;
 }
+.isRunning-checkbox-container-notPrimary input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
 
 /* Create a custom checkbox */
 .checkbox-container .checkbox {
@@ -453,6 +474,18 @@ span {
   background-color: #5c5c5c;
   border-radius: 5px;
   border: 2px solid #3a3a3a;
+  opacity: 1;
+}
+/* Create a custom checkbox */
+.isRunning-checkbox-container-notPrimary .checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: #008cff;
+  border-radius: 5px;
+  border: 2px solid #2e32fc;
   opacity: 1;
 }
 
@@ -476,6 +509,17 @@ span {
   margin: 0 0 0.5rem 0;
   background: #35dd02;
   color: #227f08;
+  border-radius: 5px;
+  border: 1px solid #000000;
+}
+
+.isRunningNotPrimary {
+  padding: 0.5rem;
+  min-width: 37rem;
+
+  margin: 0 0 0.5rem 0;
+  background: #386cfa;
+  color: #dddddd;
   border-radius: 5px;
   border: 1px solid #000000;
 }
@@ -523,6 +567,15 @@ span {
   width: 5rem;
 }
 
+.isRunning-button-notPrimary {
+  background-color: #19dbf5;
+  color: #ffffff;
+
+  text-align: center;
+  margin-left: 1rem;
+  width: 5rem;
+}
+
 .notRunning-button {
   background-color: #66666667;
   color: #c0c0c0;
@@ -540,6 +593,16 @@ span {
   margin-right: 1rem;
   color: #227f08 !important;
   background-color: #76f952 !important;
+  border: 3px #000000 !important;
+  border-radius: 5px !important;
+}
+
+.isRunningCountdown-notPrimary {
+  width: 65px;
+  textalign: center;
+  margin-right: 1rem;
+  color: white !important;
+  background-color: #19dbf5 !important;
   border: 3px #000000 !important;
   border-radius: 5px !important;
 }
@@ -578,6 +641,20 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
   background-color: #abf296;
   border: none; /* Remove border */
   color: #227f08;
+  font-size: 1rem;
+  text-align: center;
+  outline: none; /* Remove outline */
+  moz-appearance: textfield;
+}
+
+.isRunning-timer-input-notPrimary {
+  width: 1.2rem;
+  padding: 0rem;
+  max-width: 1.1rem;
+  margin: 0 0.1rem;
+  background-color: #0041f3;
+  border: none; /* Remove border */
+  color: #0e0707;
   font-size: 1rem;
   text-align: center;
   outline: none; /* Remove outline */
@@ -694,6 +771,28 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
   border: 1px solid #227f08;
 }
 
+.isRunning-timer-change-btn-notPrimary {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #abf296;
+  color: #227f08;
+  cursor: pointer;
+}
+
+.isRunning-timer-change-btn-plus-notPrimary {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  background-color: #19dbf5;
+  color: #020497;
+  border-bottom: 1px solid #020497;
+  border-radius: 4px 4px 0 0 !important;
+  cursor: pointer;
+  border: 1px solid #020497;
+}
+
 .isRunning-timer-change-btn-minus {
   border-radius: 0 0 4px 4px !important;
   padding: 0.25rem 0.5rem;
@@ -704,6 +803,18 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
   border-bottom: 1px solid #227f08;
   cursor: pointer;
   border: 1px solid #227f08;
+}
+
+.isRunning-timer-change-btn-minus-notPrimary {
+  border-radius: 0 0 4px 4px !important;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  background-color: #19dbf5;
+  color: #020497;
+  border-bottom: 1px solid #020497;
+  cursor: pointer;
+  border: 1px solid #020497;
 }
 
 .number-input {
