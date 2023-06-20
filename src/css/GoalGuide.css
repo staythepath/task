@@ -66,13 +66,28 @@
 }
 
 .MuiButton-root.resetButton {
-  background-color: orange;
+  background-color: rgba(3, 214, 3, 0.493);
   margin-top: 1rem;
   margin-right: 1rem;
+  color: white;
+}
+
+.MuiButton-root.resetButtonOrange {
+  color: white;
+  margin-top: 1rem;
+  margin-right: 1rem;
+  background-color: orange;
+}
+
+.MuiButton-root.resetButtonOrange:hover {
+  color: white;
+  margin-top: 1rem;
+  margin-right: 1rem;
+  background-color: darkorange;
 }
 
 .MuiButton-root.resetButton:hover {
-  background-color: darkorange;
+  background-color: darkgreen;
 }
 
 .MuiInputLabel-outlined {

@@ -99,7 +99,8 @@ h1 {
 form {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0rem;
+  padding-bottom: 0rem;
 }
 
 input[type="text"] {
@@ -147,7 +148,8 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0rem;
+  padding-bottom: 0rem;
   align-content: space-around;
 }
 
@@ -741,8 +743,4 @@ className={ isRunning ? 'isRunning-button' : 'timer-change-btn'}
     align-items: center; /* centers content vertically in flexbox */
     height: 45px; /* specify a height to ensure the text is centered vertically */
   }
-}
-
-.muiStepLabel-root {
-  color: #ffffff;
 }

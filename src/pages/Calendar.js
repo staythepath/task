@@ -14,7 +14,7 @@ const CalendarPage = ({ closeSidebar }) => {
   let user = auth.currentUser;
 
   const getUserEvents = async (uid) => {
-    const docRef = doc(db, "users", uid, "events");
+    const docRef = doc(db, "users", uid, "events", "eventsData");
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {

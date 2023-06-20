@@ -63,6 +63,7 @@ const NewTaskForm = ({ onSubmit }) => {
       style={{
         alignItems: "center",
         paddingTop: "83px",
+        paddingBottom: "0px",
       }}
     >
       <div style={{}}>

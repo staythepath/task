@@ -3,10 +3,13 @@ import {
   getDocs,
   collection,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
 
@@ -23,10 +26,16 @@ function Journal({
 }) {
   const [journals, setJournals] = useState([]);
   const [newEntry, setNewEntry] = useState("");
-
+  const [timeAllocForTomorrow, setTimeAllocForTomorrow] = useState(null);
   const [updatedEntry, setUpdatedEntry] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [user] = useAuthState(auth);
+  const [todosT, setTodosT] = useState([]);
+  const [weeklyGoals, setWeeklyGoals] = useState({
+    attribute1: "",
+    attribute2: "",
+    attribute3: "",
+  });
 
   const date = new Date();
   const todoListId = `${date.getFullYear()}-${
@@ -55,6 +64,67 @@ function Journal({
       setTimeout(() => playApplause(times - 1), 1000);
     }
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user) {
+        try {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowDayIndex = tomorrow.getDay();
+          const daysOrder = [
+            "sunday",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+          ];
+          const tomorrowDay = daysOrder[tomorrowDayIndex];
+
+          const today = new Date();
+          const todayDayIndex = today.getDay();
+
+          // If today is Sunday (0), we need to fetch from `nextWeek` document
+          // Otherwise, fetch from `currentWeek` document
+          const docRef = doc(
+            db,
+            `users/${user.uid}/timeAllocation/${
+              todayDayIndex === 0 ? "nextWeek" : "currentWeek"
+            }`
+          );
+
+          const timeAllocData = (await getDoc(docRef)).data();
+
+          setTimeAllocForTomorrow(timeAllocData[tomorrowDay] || 0);
+        } catch (error) {
+          console.error("Error fetching user data: ", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchWeeklyGoals = async () => {
+      if (user) {
+        try {
+          const docRef = doc(db, `users/${user.uid}/goals/weekly`);
+
+          const weeklyGoalsData = (await getDoc(docRef)).data();
+
+          setWeeklyGoals(weeklyGoalsData);
+          console.log("weeklyGoalsData", weeklyGoalsData);
+        } catch (error) {
+          console.error("Error fetching weekly goals: ", error);
+        }
+      }
+    };
+
+    fetchWeeklyGoals();
+  }, [user]);
 
   const handleToggle = async (id, completed) => {
     const todoListId = `${date.getFullYear()}-${
@@ -272,9 +342,7 @@ function Journal({
 
   const updateEntryAndUpdateEndTask = async () => {
     console.log("here are the todos", todos);
-    const todoToEnd = todos[todos.length - 1];
     await updateEntry(todaysEntry.id);
-    handleToggle(todoToEnd.id, true);
   };
 
   const onSubmitEntry = async () => {
@@ -324,13 +392,28 @@ function Journal({
 
   const getJournals = useCallback(async () => {
     const journalsRef = collection(db, "users", user.uid, "journals");
+    // Create a new date instance for the current date
+    const today = new Date();
+    // Set hours to midnight
+    today.setHours(0, 0, 0, 0);
+    // Format the date to a string
+    const todayStr = `${today.getFullYear()}-${
+      today.getMonth() + 1
+    }-${today.getDate()}`;
+
+    // Create a query against the collection
+    const q = query(journalsRef, where("date", "==", todayStr));
+
     try {
-      const data = await getDocs(journalsRef);
+      // Execute the query
+      const data = await getDocs(q);
+
       const filteredData = data.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
       }));
-      console.log(filteredData);
+
+      console.log("This is the filtered Data", filteredData);
       setJournals(filteredData);
     } catch (err) {
       console.error(err);
@@ -349,10 +432,7 @@ function Journal({
 
   return (
     <div className="ToDoList">
-      <div
-        className="ToDoList-header"
-        style={{ paddingTop: "80px", paddingBottom: "0px" }}
-      >
+      <div className="ToDoList-header" style={{ paddingBottom: "0px" }}>
         <h1>
           {todaysEntry && todaysEntry.Complete
             ? "Day Complete!"
@@ -364,10 +444,25 @@ function Journal({
           <br />
           {todaysEntry && todaysEntry.Complete && "Now do it again tomorrow!"}
         </h1>
-        <br />
+      </div>
+      <div>
+        <h2>
+          You have previously dedicated {timeAllocForTomorrow} hours of tomorrow
+          to your goals.
+        </h2>
+
+        <h2>Here are the goals you set for this week:</h2>
+        {weeklyGoals.form5Field1 && <h3>Goal 1: {weeklyGoals.form5Field1}</h3>}
+        {weeklyGoals.form5Field2 && <h3>Goal 2: {weeklyGoals.form5Field2}</h3>}
+        {weeklyGoals.form5Field3 && <h3>Goal 3: {weeklyGoals.form5Field3}</h3>}
       </div>
 
-      <TomTodoList todos={todos} setTodos={setTodos} />
+      <TomTodoList
+        todos={todos}
+        setTodos={setTodos}
+        todosT={todosT}
+        setTodosT={setTodosT}
+      />
 
       {todaysEntry ? (
         <div
@@ -418,11 +513,11 @@ function Journal({
               <div>
                 <button
                   onClick={() => updateEntryAndUpdateEndTask()}
-                  disabled={updatedEntry.length < 150 || todos.length === 0} // Disable button if character count is less than 280 or there are no todos
+                  disabled={updatedEntry.length < 150 || todosT.length === 0} // Disable button if character count is less than 280 or there are no todos
                   style={{
                     margin: "10px",
                     backgroundColor:
-                      updatedEntry.length >= 150 && todos.length > 0
+                      updatedEntry.length >= 150 && todosT.length > 0
                         ? "#131225"
                         : "#6666661e",
                   }}
@@ -463,11 +558,11 @@ function Journal({
           />
           <button
             onClick={() => onSubmitEntryAndUpdateEndTask()}
-            disabled={newEntry.length < 150 || todos.length === 0} // Disable button if character count is less than 280 or there are no todos
+            disabled={newEntry.length < 150 || todosT.length === 0} // Disable button if character count is less than 280 or there are no todos
             style={{
               margin: "10px",
               backgroundColor:
-                newEntry.length >= 150 && todos.length > 0
+                newEntry.length >= 150 && todosT.length > 0
                   ? "#131225"
                   : "#6666661e",
             }}

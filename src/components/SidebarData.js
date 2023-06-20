@@ -36,4 +36,10 @@ export const SidebarData = [
     icon: <BsIcons.BsFillJournalBookmarkFill />,
     cName: "nav-text",
   },
+  {
+    title: "Time Allocation",
+    path: "/TimeAllocation",
+    icon: <BsIcons.BsClock />,
+    cName: "nav-text",
+  },
 ];

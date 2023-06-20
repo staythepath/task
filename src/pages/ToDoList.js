@@ -966,7 +966,7 @@ const ToDoList = ({
                     setRunningTaskIndex={setRunningTaskIndex}
                     isTaskInTodos={isTaskInTodos}
                     draggableId={todo.id.toString()}
-                    elapsedTime={todo.elapsedTime}
+                    elapsedTime={elapsedTime}
                     setElapsedTime={setElapsedTime}
                     totalElapsedTime={todo.totalElapsedTime}
                   />

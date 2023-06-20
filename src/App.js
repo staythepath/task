@@ -10,6 +10,7 @@ import Journals from "./pages/Journals";
 import Register from "./pages/Register";
 import CalendarPage from "./pages/Calendar";
 import GoalGuide from "./pages/GoalGuide";
+import TimeAllocation from "./pages/TimeAllocation";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, onSnapshot } from "firebase/firestore";
@@ -151,6 +152,10 @@ function App() {
               <Route
                 path="/GoalGuide"
                 element={isAuth ? <GoalGuide /> : <Home />}
+              />
+              <Route
+                path="/TimeAllocation"
+                element={isAuth ? <TimeAllocation /> : <Home />}
               />
 
               <Route path="/Register" element={<Register />} />

@@ -91,7 +91,7 @@ const NewTaskFormNoPad = ({ onSubmit }) => {
           >
             <label htmlFor="til-done">
               <input
-                height="50px"
+                height="0px"
                 type="checkbox"
                 id="til-done"
                 checked={tilDone}

@@ -44,6 +44,7 @@ const ToDoItem = ({
   const [numCycles, setNumCycles] = useState(initialNumCycles);
   const [timer, setTimer] = useState(null);
   const timeoutId = useRef(null);
+  const [elapsedShow, setElapsedShow] = useState(0);
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
 
@@ -136,6 +137,7 @@ const ToDoItem = ({
       const interval = setInterval(() => {
         setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
         setElapsedTime((prevElapsedTime) => prevElapsedTime + 1);
+        setElapsedShow((prevElapsedShow) => prevElapsedShow + 1);
       }, 1000);
 
       setTimer(interval);
@@ -218,6 +220,7 @@ const ToDoItem = ({
     setTimeLeft(primaryDuration);
     setIsPrimary(true);
     setElapsedTime(0);
+    setElapsedShow(0);
   };
 
   const formatTime = (time) => {
@@ -704,18 +707,22 @@ const ToDoItem = ({
               {!complete ? (
                 <>
                   {tilDone ? (
-                    <input
-                      type="text"
-                      value={formatTime(timeLeft)}
-                      readOnly
-                      className={isRunning ? "isRunningCountdown" : "countdown"}
-                      style={{
-                        width: "100%",
-                        textAlign: "center",
-                        marginLeft: ".5rem",
-                        marginRight: ".5rem",
-                      }}
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={formatTime(elapsedShow)}
+                        readOnly
+                        className={
+                          isRunning ? "isRunningCountdown" : "countdown"
+                        }
+                        style={{
+                          width: "100%",
+                          textAlign: "center",
+                          marginLeft: ".5rem",
+                          marginRight: ".5rem",
+                        }}
+                      />
+                    </div>
                   ) : (
                     <input
                       type="text"

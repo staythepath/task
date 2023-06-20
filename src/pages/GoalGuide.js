@@ -21,6 +21,7 @@ import Typography from "@mui/material/Typography";
 import { StyledEngineProvider } from "@mui/material/styles";
 import "../css/GoalGuide.css";
 import { setDoc, doc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
 function GoalGuide({ todos, setTodos }) {
   const [activeStep, setActiveStep] = React.useState(0);
@@ -53,7 +54,7 @@ function GoalGuide({ todos, setTodos }) {
 
   const auth = getAuth();
   const currentUser = auth.currentUser;
-
+  const navigate = useNavigate(); // initialize useNavigate
   const handleInputChange1 = (e) => {
     setFormValues({ ...formValues, [e.target.name]: e.target.value });
   };
@@ -178,7 +179,7 @@ function GoalGuide({ todos, setTodos }) {
     await setDoc(docRef, docData, { merge: true });
 
     // Increment the active step
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    setActiveStep((prevActiveStep) => prevActiveStep);
   };
 
   const handleBack = () => {
@@ -228,11 +229,30 @@ function GoalGuide({ todos, setTodos }) {
             ))}
           </Stepper>
           {activeStep === steps.length && (
-            <Paper square elevation={0} sx={{ p: 3 }}>
+            <Paper
+              square
+              elevation={0}
+              sx={{
+                p: 3,
+                backdropFilter: "blur(10px)",
+                backgroundColor: "rgba(0, 0, 0, 0.2)",
+                borderRadius: "10px",
+                color: "white",
+              }}
+            >
               <Typography>
-                All steps completed - you&apos;re finished
+                All steps complete - go to the Journals page and setup tomorrows
+                tasks!
               </Typography>
-              <Button onClick={handleReset} className="resetButton">
+              <Button
+                onClick={() => navigate("/Journals")}
+                className="resetButton"
+              >
+                {" "}
+                {/* Use the class */}
+                Continue
+              </Button>
+              <Button onClick={handleReset} className="resetButtonOrange">
                 {" "}
                 {/* Use the class */}
                 Reset

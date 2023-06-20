@@ -25,11 +25,11 @@ const todoTListId = `${tomorrow.getFullYear()}-${
   tomorrow.getMonth() + 1
 }-${tomorrow.getDate()}`;
 
-const ToDoList = ({ isRunning, setIsRunning }) => {
+const ToDoList = ({ isRunning, setIsRunning, todosT, setTodosT }) => {
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
 
   const [user, setUser] = useState({ role: "guest" }); // Default user state
-  const [todosT, setTodosT] = useState([]);
+
   const [completedTodosT, setCompletedTodosT] = useState([]);
   const tomorrow = useMemo(() => {
     const date = new Date();
@@ -303,7 +303,7 @@ const ToDoList = ({ isRunning, setIsRunning }) => {
     <>
       <NewTaskFormNoPad
         onSubmit={handleNewTask}
-        style={{ paddingTop: "0px" }}
+        style={{ paddingBottom: "0px" }}
       />
       <DragDropContext onDragEnd={handleOnDragEnd}>
         <div className="ToDoList">
@@ -312,6 +312,8 @@ const ToDoList = ({ isRunning, setIsRunning }) => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              paddingBottom: "0px",
+              paddingTop: "0px",
             }}
           >
             <h3>Tasks for tomorrow</h3>
