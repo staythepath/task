@@ -28,6 +28,14 @@
   </head>
   <body>
     <script>
+      if (!window.process) {
+        window.process = {
+          env: { NODE_ENV: "development" },
+        };
+      }
+    </script>
+
+    <script>
       window.fbAsyncInit = function () {
         FB.init({
           appId: "207629991676987",

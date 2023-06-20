@@ -48,6 +48,8 @@ const ToDoItem = ({
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
 
+  const worker = new Worker(`${process.env.PUBLIC_URL}/workerBootstrap.js`);
+
   const playBell = useCallback(
     (times = 1) => {
       if (times > 0) {
@@ -134,21 +136,23 @@ const ToDoItem = ({
   // Countdown useEffect
   useEffect(() => {
     if (isRunning && !timer) {
-      const interval = setInterval(() => {
+      worker.postMessage("start");
+      worker.onmessage = (e) => {
         setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
         setElapsedTime((prevElapsedTime) => prevElapsedTime + 1);
         setElapsedShow((prevElapsedShow) => prevElapsedShow + 1);
-      }, 1000);
-
-      setTimer(interval);
+      };
+      setTimer(worker);
     } else if (!isRunning && timer) {
-      clearInterval(timer);
+      timer.postMessage("stop");
+      timer.terminate();
       setTimer(null);
     }
 
     return () => {
       if (timer) {
-        clearInterval(timer);
+        timer.postMessage("stop");
+        timer.terminate();
         setTimer(null);
       }
     };
@@ -158,27 +162,31 @@ const ToDoItem = ({
   useEffect(() => {
     if (timeLeft === 0) {
       playBell();
-      if (isRunning) clearInterval(timer); // Clear interval before reassigning
+
+      if (isRunning && timer) {
+        timer.postMessage("stop");
+        timer.terminate();
+      }
 
       if (isPrimary) {
         setIsPrimary(false);
         setTimeLeft(secondaryDuration);
 
-        // Check if it's the last primary cycle
         if (currentCycle === numCycles - 1) {
           playApplause();
-          // start secondary countdown even in the last cycle
-          const interval = setInterval(() => {
+          let worker = new Worker("./timerWorker.js");
+          worker.postMessage("start");
+          worker.onmessage = (e) => {
             setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-          }, 1000);
-
-          setTimer(interval);
+          };
+          setTimer(worker);
         } else {
-          const interval = setInterval(() => {
+          let worker = new Worker("./timerWorker.js");
+          worker.postMessage("start");
+          worker.onmessage = (e) => {
             setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-          }, 1000);
-
-          setTimer(interval);
+          };
+          setTimer(worker);
         }
       } else {
         setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
@@ -232,6 +240,27 @@ const ToDoItem = ({
       2,
       "0"
     )}:${String(seconds).padStart(2, "0")}`;
+  };
+
+  const toggleTimer = () => {
+    const playBell = (times = 1) => {
+      if (times > 0) {
+        const audio = new Audio("/boxingbell.wav");
+        audio.volume = volume / 100;
+        audio.play();
+        setTimeout(() => playBell(times - 1), 1000);
+      }
+    };
+    setIsRunning(!isRunning);
+
+    if (isRunning) {
+      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
+      setRunningTaskIndex(-1);
+    } else if (isTaskInTodos(id)) {
+      playBell();
+      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
+      setRunningTaskIndex(index);
+    }
   };
 
   const toggleEdit = () => {
@@ -316,27 +345,6 @@ const ToDoItem = ({
   const crossedOutStyle = {
     textDecoration: "line-through",
     opacity: 0.5,
-  };
-
-  const toggleTimer = () => {
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
-    setIsRunning(!isRunning);
-
-    if (isRunning) {
-      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
-      setRunningTaskIndex(-1);
-    } else if (isTaskInTodos(id)) {
-      playBell();
-      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
-      setRunningTaskIndex(index);
-    }
   };
 
   return (

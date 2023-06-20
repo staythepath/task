@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
 import "./Auth.css";
+import console from "console-browserify";
+
 import { auth, googleProvider, db } from "../config/firebase";
 import {
   // createUserWithEmailAndPassword,
