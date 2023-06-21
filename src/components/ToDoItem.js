@@ -40,9 +40,10 @@ const ToDoItem = ({
   const [secondaryDurationFocused, setSecondaryDurationFocused] =
     useState(false);
   const [cyclesFocused, setCyclesFocused] = useState(false);
-  const [currentCycle, setCurrentCycle] = useState(0);
+  const [currentCycle, setCurrentCycle] = useState(-1);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
-  const [timer, setTimer] = useState(null);
+  const requestRef = useRef();
+  const previousTimeRef = useRef();
   const timeoutId = useRef(null);
   const [elapsedShow, setElapsedShow] = useState(0);
 
@@ -131,89 +132,57 @@ const ToDoItem = ({
     onToggle,
   ]);
 
-  // Countdown useEffect
-  useEffect(() => {
-    if (isRunning && !timer) {
-      const interval = setInterval(() => {
-        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-        setElapsedTime((prevElapsedTime) => prevElapsedTime + 1);
-        setElapsedShow((prevElapsedShow) => prevElapsedShow + 1);
-      }, 1000);
+  // Timer logic using requestAnimationFrame
+  const animate = (time) => {
+    if (previousTimeRef.current !== undefined) {
+      const deltaTime = time - previousTimeRef.current;
+      previousTimeRef.current = time;
 
-      setTimer(interval);
-    } else if (!isRunning && timer) {
-      clearInterval(timer);
-      setTimer(null);
+      if (isRunning) {
+        setElapsedShow((prevElapsedShow) => prevElapsedShow + deltaTime / 1000);
+        setElapsedTime((prevElapsedTime) => prevElapsedTime + deltaTime / 1000);
+        setTimeLeft((prevTimeLeft) => {
+          const newTimeLeft = prevTimeLeft - deltaTime / 1000;
+          if (newTimeLeft <= 0) {
+            playBell();
+            if (isPrimary) {
+              setIsPrimary(false);
+              setCurrentCycle((prevCycle) => prevCycle + 1);
+              return secondaryDuration;
+            } else {
+              if (currentCycle < numCycles - 1) {
+                setIsPrimary(true);
+                return primaryDuration;
+              } else {
+                setIsPrimary(true);
+                handleTaskCompletion();
+                return 0;
+              }
+            }
+          }
+          return newTimeLeft;
+        });
+
+        if (currentCycle === numCycles && !isPrimary && timeLeft <= 0) {
+          setIsPrimary(true);
+          handleTaskCompletion();
+          return;
+        }
+      }
+    } else {
+      previousTimeRef.current = time;
     }
+
+    requestRef.current = requestAnimationFrame(animate);
+  };
+
+  useEffect(() => {
+    requestRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (timer) {
-        clearInterval(timer);
-        setTimer(null);
-      }
+      cancelAnimationFrame(requestRef.current);
     };
-  }, [isRunning, timer, setElapsedTime]);
-
-  // Timer logic useEffect
-  useEffect(() => {
-    if (timeLeft === 0) {
-      playBell();
-      if (isRunning) clearInterval(timer); // Clear interval before reassigning
-
-      if (isPrimary) {
-        setIsPrimary(false);
-        setTimeLeft(secondaryDuration);
-
-        // Check if it's the last primary cycle
-        if (currentCycle === numCycles - 1) {
-          playApplause();
-          // start secondary countdown even in the last cycle
-          const interval = setInterval(() => {
-            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-          }, 1000);
-
-          setTimer(interval);
-        } else {
-          const interval = setInterval(() => {
-            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-          }, 1000);
-
-          setTimer(interval);
-        }
-      } else {
-        setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-        setIsPrimary(!isPrimary);
-        setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-
-        // Check if it's the last secondary cycle
-        if (currentCycle < numCycles - 1) {
-          const interval = setInterval(() => {
-            setTimeLeft((prevTimeLeft) => prevTimeLeft - 1);
-          }, 1000);
-
-          setTimer(interval);
-        } else {
-          // if it's the last secondary cycle
-          // we allow the last secondary countdown to run before running handleTaskCompletion
-          if (timeLeft === 0 && currentCycle === numCycles - 1 && !isPrimary) {
-            handleTaskCompletion();
-          }
-        }
-      }
-    }
-  }, [
-    timeLeft,
-    isRunning,
-    currentCycle,
-    numCycles,
-    isPrimary,
-    timer,
-    handleTaskCompletion,
-    secondaryDuration,
-    primaryDuration,
-    playBell,
-    playApplause,
-  ]);
+  }, [isRunning, primaryDuration, secondaryDuration, currentCycle, numCycles]);
 
   const resetTimer = () => {
     setIsRunning(false);
@@ -221,12 +190,13 @@ const ToDoItem = ({
     setIsPrimary(true);
     setElapsedTime(0);
     setElapsedShow(0);
+    setCurrentCycle(0);
   };
 
   const formatTime = (time) => {
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor(time / 60) % 60;
-    const seconds = time % 60;
+    const seconds = Math.floor(time % 60);
 
     return `${hours ? hours + ":" : ""}${String(minutes).padStart(
       2,
