@@ -46,6 +46,8 @@ const ToDoItem = ({
   const previousTimeRef = useRef();
   const timeoutId = useRef(null);
   const [elapsedShow, setElapsedShow] = useState(0);
+  // eslint-disable-next-line
+  const [deltaTime, setDeltaTime] = useState(0);
 
   const userId = auth.currentUser ? auth.currentUser.uid : null;
 
@@ -133,48 +135,67 @@ const ToDoItem = ({
   ]);
 
   // Timer logic using requestAnimationFrame
-  const animate = (time) => {
-    if (previousTimeRef.current !== undefined) {
-      const deltaTime = time - previousTimeRef.current;
-      previousTimeRef.current = time;
+  const animate = useCallback(
+    (time) => {
+      if (previousTimeRef.current !== undefined) {
+        const deltaTime = time - previousTimeRef.current;
+        setDeltaTime(deltaTime);
+        previousTimeRef.current = time;
 
-      if (isRunning) {
-        setElapsedShow((prevElapsedShow) => prevElapsedShow + deltaTime / 1000);
-        setElapsedTime((prevElapsedTime) => prevElapsedTime + deltaTime / 1000);
-        setTimeLeft((prevTimeLeft) => {
-          const newTimeLeft = prevTimeLeft - deltaTime / 1000;
-          if (newTimeLeft <= 0) {
-            playBell();
-            if (isPrimary) {
-              setIsPrimary(false);
-              setCurrentCycle((prevCycle) => prevCycle + 1);
-              return secondaryDuration;
-            } else {
-              if (currentCycle < numCycles - 1) {
-                setIsPrimary(true);
-                return primaryDuration;
+        if (isRunning) {
+          setElapsedShow(
+            (prevElapsedShow) => prevElapsedShow + deltaTime / 1000
+          );
+          setElapsedTime(
+            (prevElapsedTime) => prevElapsedTime + deltaTime / 1000
+          );
+          setTimeLeft((prevTimeLeft) => {
+            const newTimeLeft = prevTimeLeft - deltaTime / 1000;
+            if (newTimeLeft <= 0) {
+              playBell();
+              if (isPrimary) {
+                setIsPrimary(false);
+                setCurrentCycle((prevCycle) => prevCycle + 1);
+                return secondaryDuration;
               } else {
-                setIsPrimary(true);
-                handleTaskCompletion();
-                return 0;
+                if (currentCycle < numCycles - 1) {
+                  setIsPrimary(true);
+                  return primaryDuration;
+                } else {
+                  setIsPrimary(true);
+                  handleTaskCompletion();
+                  return 0;
+                }
               }
             }
+            return newTimeLeft;
+          });
+
+          if (currentCycle === numCycles && !isPrimary && timeLeft <= 0) {
+            setIsPrimary(true);
+            handleTaskCompletion();
+            return;
           }
-          return newTimeLeft;
-        });
-
-        if (currentCycle === numCycles && !isPrimary && timeLeft <= 0) {
-          setIsPrimary(true);
-          handleTaskCompletion();
-          return;
         }
+      } else {
+        previousTimeRef.current = time;
       }
-    } else {
-      previousTimeRef.current = time;
-    }
 
-    requestRef.current = requestAnimationFrame(animate);
-  };
+      requestRef.current = requestAnimationFrame(animate);
+    },
+    [
+      isRunning,
+      isPrimary,
+      currentCycle,
+      numCycles,
+      timeLeft,
+      primaryDuration,
+      secondaryDuration,
+      handleTaskCompletion,
+      playBell,
+      setElapsedTime,
+    ]
+  ); // Define your dependencies
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
@@ -182,15 +203,23 @@ const ToDoItem = ({
     return () => {
       cancelAnimationFrame(requestRef.current);
     };
-  }, [isRunning, primaryDuration, secondaryDuration, currentCycle, numCycles]);
+  }, [
+    isRunning,
+    primaryDuration,
+    secondaryDuration,
+    currentCycle,
+    numCycles,
+    animate,
+  ]);
 
   const resetTimer = () => {
-    setIsRunning(false);
     setTimeLeft(primaryDuration);
     setIsPrimary(true);
     setElapsedTime(0);
     setElapsedShow(0);
     setCurrentCycle(0);
+    setIsRunning(false);
+    setRunningTaskIndex(-1);
   };
 
   const formatTime = (time) => {
