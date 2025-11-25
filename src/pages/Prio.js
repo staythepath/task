@@ -1,293 +1,238 @@
-////////////This works but data.columns needs to be removed from that useEffect dependency array to prevent the loops
-
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { DragDropContext } from "react-beautiful-dnd";
 import PriorityColumn from "../components/PriorityColumn";
-import "./Prio.css";
-import { collection, updateDoc, doc, getDocs } from "firebase/firestore";
-import { auth, db } from "../config/firebase";
+import { useTasks } from "../context/TaskContext";
 
-function Prio({ todos, setTodos }) {
-  const todoListId = "your-todo-list-id";
+const COLUMN_TEMPLATE = {
+  "column-1": {
+    id: "column-1",
+    title: "Tasks",
+    sub: "If it takes less than 5 minutes leave it here",
+  },
+  "column-2": {
+    id: "column-2",
+    title: "Urgent and important",
+  },
+  "column-3": {
+    id: "column-3",
+    title: "Important",
+  },
+  "column-4": {
+    id: "column-4",
+    title: "Urgent",
+  },
+  "column-5": {
+    id: "column-5",
+    title: "Meh",
+  },
+};
 
-  const [updateFirestore, setUpdateFirestore] = useState(false);
-  const [data, setData] = useState({
-    tasks: {},
-    columns: {
-      "column-1": {
-        id: "column-1",
-        title: "Tasks",
-        sub: "If it takes less than 5 minutes leave it here",
-        taskIds: [],
-      },
-      "column-2": {
-        id: "column-2",
-        title: "Urgent and important",
-        taskIds: [],
-      },
-      "column-3": {
-        id: "column-3",
-        title: "Important",
-        taskIds: [],
-      },
-      "column-4": {
-        id: "column-4",
-        title: "Urgent",
-        taskIds: [],
-      },
-      "column-5": {
-        id: "column-5",
-        title: "Meh",
-        taskIds: [],
-      },
-    },
-    columnOrder: ["column-1", "column-2", "column-3", "column-4", "column-5"],
+const COLUMN_ORDER = [
+  "column-1",
+  "column-2",
+  "column-3",
+  "column-4",
+  "column-5",
+];
+
+const buildBoardFromTodos = (todos) => {
+  const tasks = {};
+  const columns = COLUMN_ORDER.reduce((acc, columnId) => {
+    acc[columnId] = { ...COLUMN_TEMPLATE[columnId], taskIds: [] };
+    return acc;
+  }, {});
+
+  todos
+    .filter((task) => !task.complete)
+    .forEach((task) => {
+      tasks[task.id] = task;
+      const columnId = COLUMN_TEMPLATE[task.column]?.id || "column-1";
+      columns[columnId].taskIds.push(task.id);
+    });
+
+  Object.values(columns).forEach((column) => {
+    column.taskIds.sort((a, b) => {
+      const taskA = tasks[a];
+      const taskB = tasks[b];
+      return (taskA?.order ?? 0) - (taskB?.order ?? 0);
+    });
   });
-  const columnsRef = useRef(data.columns);
-  console.log(data);
 
-  // Create a memoized todosRef
-  const todosRef = useMemo(
-    () =>
-      collection(
-        db,
-        `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/`
-      ),
-    []
+  return {
+    tasks,
+    columns,
+    columnOrder: COLUMN_ORDER,
+  };
+};
+
+function Prio() {
+  const { todos, updateTask, activeListId } = useTasks();
+  const [board, setBoard] = useState(() => buildBoardFromTodos(todos));
+
+  useEffect(() => {
+    setBoard(buildBoardFromTodos(todos));
+  }, [todos]);
+
+  const persistBoard = useCallback(
+    async (state) => {
+      let order = 0;
+      const updates = [];
+
+      COLUMN_ORDER.forEach((columnId) => {
+        const column = state.columns[columnId];
+        column.taskIds.forEach((taskId) => {
+          updates.push(
+            updateTask(taskId, { order, column: columnId }, "todos")
+          );
+          order += 1;
+        });
+      });
+
+      await Promise.all(updates);
+    },
+    [updateTask]
   );
 
-  const fetchTasks = useCallback(async () => {
-    const tasksSnapshot = await getDocs(todosRef);
-    const tasksData = tasksSnapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .sort((a, b) => a.order - b.order); // sort tasks by order
+  const onDragEnd = useCallback(
+    async (result) => {
+      const { destination, source, draggableId } = result;
 
-    // Update todos
-    setTodos(tasksData);
-    console.log("Fetch Tasks Ran");
-    console.log("Here is task data: ", tasksData);
+      if (!destination) {
+        return;
+      }
 
-    // Distribute tasks among columns based on their column value
-    const tasks = {};
-    tasksData.forEach((task) => {
-      tasks[task.id] = task;
-    });
+      if (
+        destination.droppableId === source.droppableId &&
+        destination.index === source.index
+      ) {
+        return;
+      }
 
-    // Return the tasks
-    return tasks;
-  }, [todosRef, setTodos]); // remove data.columns from here
+      const start = board.columns[source.droppableId];
+      const finish = board.columns[destination.droppableId];
 
-  useEffect(() => {
-    fetchTasks().then((tasks) => {
-      const newColumns = { ...columnsRef.current }; // Create a new copy of columns object
+      if (!start || !finish) {
+        return;
+      }
 
-      // We want to place all tasks in column-1 so let's start by clearing it
-      newColumns["column-1"].taskIds = [];
+      const nextBoard = {
+        ...board,
+        columns: { ...board.columns },
+      };
 
-      Object.keys(tasks).forEach((taskId) => {
-        const task = tasks[taskId];
+      if (start === finish) {
+        const newTaskIds = Array.from(start.taskIds);
+        newTaskIds.splice(source.index, 1);
+        newTaskIds.splice(destination.index, 0, draggableId);
 
-        // Ignore the original column attribute of the task and always place it in column-1
-        newColumns["column-1"].taskIds = [
-          ...newColumns["column-1"].taskIds,
-          task.id,
-        ];
-      });
-
-      // Update data
-      columnsRef.current = newColumns;
-      setData((prevData) => ({
-        ...prevData,
-        tasks,
-        columns: newColumns,
-      }));
-    });
-  }, [fetchTasks]); // fetchTasks is a dependency here
-
-  const updateOrder = (newState) => {
-    let order = 0; // Initialize order counter
-    let newTodos = []; // Initialize newTodos array
-
-    // Iterate over all columns in their order
-    newState.columnOrder.forEach((columnId) => {
-      const column = newState.columns[columnId];
-
-      // Iterate over all tasaks in the current column in their order
-      column.taskIds.forEach((taskId) => {
-        // Find the corresponding todo in the original todos array
-        const todo = todos.find((todo) => todo.id === taskId);
-
-        // Create a new todo with the updated order and column
-        const newTodo = {
-          ...todo,
-          order, // Assign the current order to the task
-          column: columnId, // Assign the current column to the task
+        nextBoard.columns[start.id] = {
+          ...start,
+          taskIds: newTaskIds,
         };
 
-        // Push the new todo to the newTodos array
-        newTodos.push(newTodo);
+        setBoard(nextBoard);
+        await persistBoard(nextBoard);
+        return;
+      }
 
-        order++; // Increment the order counter
-      });
-    });
+      const startTaskIds = Array.from(start.taskIds);
+      startTaskIds.splice(source.index, 1);
+      const finishTaskIds = Array.from(finish.taskIds);
+      finishTaskIds.splice(destination.index, 0, draggableId);
 
-    // Update todos in local state
-    setTodos(newTodos);
-
-    // Set updateFirestore flag to true
-    setUpdateFirestore(true);
-  };
-
-  const onDragEnd = async (result) => {
-    const { destination, source, draggableId } = result;
-
-    // dropped outside the list
-    if (!destination) {
-      return;
-    }
-
-    const start = data.columns[source.droppableId];
-    const finish = data.columns[destination.droppableId];
-
-    // Moving in the same list
-    if (start === finish) {
-      const newTaskIds = Array.from(start.taskIds);
-      const [removed] = newTaskIds.splice(source.index, 1);
-      newTaskIds.splice(destination.index, 0, removed);
-
-      const newColumn = {
+      nextBoard.columns[start.id] = {
         ...start,
-        taskIds: newTaskIds,
+        taskIds: startTaskIds,
+      };
+      nextBoard.columns[finish.id] = {
+        ...finish,
+        taskIds: finishTaskIds,
       };
 
-      const newState = {
-        ...data,
-        columns: {
-          ...data.columns,
-          [newColumn.id]: newColumn,
-        },
-      };
+      setBoard(nextBoard);
 
-      // Update the local state
-      setData(newState);
+      await persistBoard(nextBoard);
+    },
+    [board, persistBoard]
+  );
 
-      // Update order and todos in local state
-      updateOrder(newState);
+  const { tasks, columns, columnOrder } = board;
 
-      return;
-    }
+  const renderColumn = useCallback(
+    (columnId) => {
+      const column = columns[columnId];
+      const tasksInColumn = column.taskIds.map((taskId) => tasks[taskId]);
 
-    // Moving from one list to another
-    const startTaskIds = Array.from(start.taskIds);
-    const [removed] = startTaskIds.splice(source.index, 1);
-    const newStart = {
-      ...start,
-      taskIds: startTaskIds,
-    };
+      let className;
+      switch (columnId) {
+        case "column-1":
+          className = "column1";
+          break;
+        case "column-2":
+          className = "column2";
+          break;
+        case "column-3":
+          className = "column3";
+          break;
+        case "column-4":
+          className = "column4";
+          break;
+        case "column-5":
+          className = "column5";
+          break;
+        default:
+          className = "";
+      }
 
-    const finishTaskIds = Array.from(finish.taskIds);
-    finishTaskIds.splice(destination.index, 0, removed);
-    const newFinish = {
-      ...finish,
-      taskIds: finishTaskIds,
-    };
-
-    const newState = {
-      ...data,
-      columns: {
-        ...data.columns,
-        [newStart.id]: newStart,
-        [newFinish.id]: newFinish,
-      },
-    };
-
-    // Update column attribute of the moved task in local state
-    const newTask = { ...newState.tasks[draggableId], column: newFinish.id };
-    newState.tasks[draggableId] = newTask;
-
-    // Set data
-    setData(newState);
-
-    // Update order and todos in local state
-    updateOrder(newState);
-  };
-
-  useEffect(() => {
-    if (updateFirestore) {
-      // Here you'd update Firestore with the current state of todos
-      todos.forEach(async (todo) => {
-        const taskRef = doc(todosRef, todo.id);
-        await updateDoc(taskRef, todo);
-      });
-
-      // Reset the updateFirestore flag
-      setUpdateFirestore(false);
-    }
-  }, [todos, todosRef, updateFirestore]);
-
-  console.log(todos);
-
-  const { tasks, columns, columnOrder } = data; // extract tasks and columns from data state
+      return (
+        <PriorityColumn
+          key={columnId}
+          className={className}
+          column={column}
+          tasks={tasksInColumn}
+        />
+      );
+    },
+    [columns, tasks]
+  );
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <h2
-        style={{
-          paddingTop: "90px",
-          paddingBottom: "30px",
-          textAlign: "center",
-        }}
-      >
-        Prioritize your tasks
-      </h2>
-      <div className="priority-columns-container">
-        {columnOrder.map((columnId) => {
-          const column = columns[columnId];
-          const tasksInColumn = column.taskIds.map((taskId) => tasks[taskId]);
+    <div className="app-layout">
+      <header className="page-header">
+        <div className="page-header__content">
+          <h1>Priority matrix</h1>
+          <p>
+            Drag each task into the quadrant that matches its urgency and
+            importance. Use this view to stage what deserves your focus first.
+          </p>
+        </div>
+        <div className="page-header__aside">
+          <span className="badge">{columnOrder.length} columns</span>
+        </div>
+      </header>
 
-          let className;
-          switch (columnId) {
-            case "column-1":
-              className = "column1";
-              break;
-            case "column-2":
-              className = "column2";
-              break;
-            case "column-3":
-              className = "column3";
-              break;
-            case "column-4":
-              className = "column4";
-              break;
-            case "column-5":
-              className = "column5";
-              break;
-            default:
-              break;
-          }
-
-          return (
-            <PriorityColumn
-              key={columnId}
-              className={className}
-              column={column}
-              tasks={tasksInColumn}
-              todos={todos}
-              setTodos={setTodos}
-            />
-          );
-        })}
-      </div>
-    </DragDropContext>
+      {!activeListId ? (
+        <section className="page-section page-section--subtle">
+          <div className="empty-state">
+            <strong>Select a list to prioritise</strong>
+            Choose a list in the To Do view so we can pull in the tasks that
+            still need attention.
+          </div>
+        </section>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <section className="page-section">
+            <div className="page-section__headline">
+              <h2>Quadrants</h2>
+              <span className="pill">Drag to assign priority</span>
+            </div>
+            <div className="priority-columns-container">
+              {columnOrder.map(renderColumn)}
+            </div>
+          </section>
+        </DragDropContext>
+      )}
+    </div>
   );
 }
 

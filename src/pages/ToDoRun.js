@@ -1,315 +1,184 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Slider } from "@mui/material";
 import { styled } from "@mui/system";
 import ToDoItemRun from "../components/ToDoItemRun";
 import { BsPlayFill, BsPauseFill, BsVolumeUpFill } from "react-icons/bs";
 import { IconContext } from "react-icons";
-
-import { auth, db } from "../config/firebase";
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  setDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { useTasks } from "../context/TaskContext";
 
 const StyledSlider = styled(Slider)({
-  width: 300,
-  margin: "0 auto",
-
-  color: "black",
+  width: "100%",
+  color: "#8b5cf6",
   "& .MuiSlider-thumb": {
-    height: 24,
-    width: 24,
-    backgroundColor: "#ccc",
+    height: 22,
+    width: 22,
+    backgroundColor: "#f8fafc",
+    border: "3px solid rgba(99,102,241,0.45)",
   },
   "& .MuiSlider-track": {
     height: 8,
-    backgroundColor: "gray",
+    borderRadius: 999,
   },
   "& .MuiSlider-rail": {
     height: 8,
-    backgroundColor: "gray",
+    opacity: 0.3,
   },
 });
 
-const ToDoRun = ({
-  todos,
-  setTodos,
-  completedTodos,
-  setCompletedTodos,
-  isRunning,
-  setIsRunning,
-}) => {
+const ToDoRun = () => {
+  const {
+    todos: remoteTodos,
+    completedTodos: remoteCompletedTodos,
+    reorderTodos,
+    toggleTaskCompletion,
+    updateTask,
+    activeListId,
+  } = useTasks();
+
+  const [todos, setTodos] = useState(remoteTodos);
+  const [completedTodos, setCompletedTodos] = useState(remoteCompletedTodos);
   const [runningTaskIndex, setRunningTaskIndex] = useState(-1);
   const [volume, setVolume] = useState(25);
   const [showModal, setShowModal] = useState(false);
 
-  let userId = auth.currentUser.uid;
-
-  const todoListId = "your-todo-list-id";
+  useEffect(() => {
+    setTodos(remoteTodos);
+    if (!remoteTodos.length) {
+      setRunningTaskIndex(-1);
+    }
+  }, [remoteTodos]);
 
   useEffect(() => {
-    const fetchTodos = async () => {
-      const todosQuery = query(
-        collection(db, `users/${userId}/todoLists/${todoListId}/todos`)
-      );
-      const todosSnapshot = await getDocs(todosQuery);
-      let todosData = todosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+    setCompletedTodos(remoteCompletedTodos);
+  }, [remoteCompletedTodos]);
 
-      // Sort todos by order
-      todosData.sort((a, b) => a.order - b.order);
-
-      setTodos(todosData);
-    };
-
-    fetchTodos();
-  }, []);
-
-  useEffect(() => {
-    const fetchCompletedTodos = async () => {
-      const completedTodosQuery = query(
-        collection(db, `users/${userId}/todoLists/${todoListId}/completedTodos`)
-      );
-      const completedTodosSnapshot = await getDocs(completedTodosQuery);
-      const completedTodosData = completedTodosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setCompletedTodos(completedTodosData);
-    };
-
-    fetchCompletedTodos();
-  }, []);
-
-  useEffect(() => {
-    console.log("we are about to update firestore with", todos);
-  }, [todos]);
-
-  const playBell = (times = 1) => {
-    if (times > 0) {
+  const playBell = useCallback(
+    (times = 1) => {
+      if (!times) return;
       const audio = new Audio("/boxingbell.wav");
       audio.volume = volume / 100;
       audio.play();
       setTimeout(() => playBell(times - 1), 1000);
-    }
-  };
+    },
+    [volume]
+  );
 
-  const handleToggle = async (id, completed) => {
-    const todoListId = "your-todo-list-id"; // replace with your actual todoList ID
-    const taskIndex = todos.findIndex((task) => task.id === id);
-
-    let movedTask;
-
-    if (taskIndex !== -1) {
-      const updatedTask = {
-        ...todos[taskIndex],
-        complete:
-          completed !== undefined ? completed : !todos[taskIndex].complete,
-      };
-      const newTodos = [...todos];
-      newTodos.splice(taskIndex, 1);
-      setTodos(newTodos);
-
-      if (updatedTask.complete) {
-        const completedTask = {
-          ...updatedTask,
-          isRunning: false,
-          order: null,
-        };
-        setCompletedTodos([...completedTodos, completedTask]);
-
-        // Update Firestore
-        movedTask = completedTask;
-        await deleteDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-          )
-        );
-        await setDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-          ),
-          movedTask
-        );
-      } else {
-        setTodos([...newTodos, updatedTask]);
-
-        // Update Firestore
-        movedTask = updatedTask;
-        await deleteDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-          )
-        );
-        await setDoc(
-          doc(
-            db,
-            `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-          ),
-          movedTask
-        );
-      }
-    } else {
-      const completedTaskIndex = completedTodos.findIndex(
-        (task) => task.id === id
-      );
-      const updatedTask = {
-        ...completedTodos[completedTaskIndex],
-        complete: false,
-        isRunning: false, // Here we set the complete property to false, indicating the task is now incomplete
-      };
+  const handleToggle = useCallback(
+    async (id, completed) => {
+      await toggleTaskCompletion(id, completed);
       setRunningTaskIndex(-1);
-      const newCompletedTodos = [...completedTodos];
-      newCompletedTodos.splice(completedTaskIndex, 1);
-      setCompletedTodos(newCompletedTodos);
+    },
+    [toggleTaskCompletion]
+  );
 
-      // Update the incomplete task with the correct values
-      const incompleteTask = {
-        ...updatedTask,
-        primaryDuration: updatedTask.primaryDuration,
-        secondaryDuration: updatedTask.secondaryDuration,
-        numCycles: updatedTask.numCycles,
-        tilDone: updatedTask.tilDone,
-        isRunning: false,
-        order: null,
-      };
-      setTodos([...todos, incompleteTask]);
+  const handleUpdate = useCallback(
+    async (updatedTask) => {
+      if (!updatedTask?.id) return;
+      const { id, ...updates } = updatedTask;
+      await updateTask(id, updates);
+    },
+    [updateTask]
+  );
 
-      // Update Firestore
-      movedTask = incompleteTask;
-      await deleteDoc(
-        doc(
-          db,
-          `users/${auth.currentUser.uid}/todoLists/${todoListId}/completedTodos/${id}`
-        )
-      );
-      await setDoc(
-        doc(
-          db,
-          `users/${auth.currentUser.uid}/todoLists/${todoListId}/todos/${id}`
-        ),
-        movedTask
-      );
-    }
-  };
-
-  const handleDelete = (id) => {
-    const newTodos = todos.filter((todo) => todo.id !== id);
-    setTodos(newTodos);
-  };
-
-  const isTaskInTodos = (taskId) => {
-    return todos.some((todo) => todo.id === taskId);
-  };
-
-  const handleUpdate = (updatedTask) => {
-    const newTodos = todos.map((todo) =>
-      todo.id === updatedTask.id ? updatedTask : todo
-    );
-    const newCompletedTodos = completedTodos.map((todo) =>
-      todo.id === updatedTask.id ? updatedTask : todo
-    );
-    console.log(todos);
-    setTodos(newTodos);
-    setCompletedTodos(newCompletedTodos);
-  };
-
-  const startFirstTask = () => {
+  const startFirstTask = useCallback(() => {
     if (todos.length > 0 && runningTaskIndex === -1) {
       setShowModal(true);
     }
-  };
+  }, [todos.length, runningTaskIndex]);
 
-  const actuallyStartFirstTask = () => {
+  const actuallyStartFirstTask = useCallback(async () => {
     playBell();
     if (todos.length > 0) {
       setRunningTaskIndex(0);
-      let updatedTodos = [...todos];
-      updatedTodos[0] = { ...updatedTodos[0], isRunning: true };
-      setTodos(updatedTodos);
+      const [firstTask, ...rest] = todos;
+      setTodos([{ ...firstTask, isRunning: true }, ...rest]);
+      await updateTask(firstTask.id, { isRunning: true });
     }
     setShowModal(false);
-  };
+  }, [playBell, todos, updateTask]);
 
-  const pauseOrResumeTask = () => {
+  const pauseOrResumeTask = useCallback(async () => {
     playBell();
-    console.log("pause or resume task");
     if (todos.length > 0 && runningTaskIndex !== -1) {
-      let updatedTodos = [...todos];
-      let isRunning = updatedTodos[runningTaskIndex].isRunning;
-      updatedTodos[runningTaskIndex] = {
-        ...updatedTodos[runningTaskIndex],
-        isRunning: !isRunning,
+      const updated = [...todos];
+      const task = updated[runningTaskIndex];
+      updated[runningTaskIndex] = {
+        ...task,
+        isRunning: !task.isRunning,
       };
-      setTodos(updatedTodos);
+      setTodos(updated);
+      await updateTask(task.id, { isRunning: !task.isRunning });
     }
-  };
+  }, [playBell, runningTaskIndex, todos, updateTask]);
 
-  const handleOnDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(todos);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setTodos(items);
+  const handleOnDragEnd = useCallback(
+    async (result) => {
+      if (!result.destination) return;
 
-    // If the running task is the one we moved, update the runningTaskIndex
-    if (runningTaskIndex === result.source.index) {
-      setRunningTaskIndex(result.destination.index);
-    } else {
-      // If the running task was not the one we moved but it was affected by the rearrangement, update its index accordingly
-      if (
+      const items = Array.from(todos);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      setTodos(items);
+      await reorderTodos(items);
+
+      if (runningTaskIndex === result.source.index) {
+        setRunningTaskIndex(result.destination.index);
+      } else if (
         result.destination.index <= runningTaskIndex &&
         result.source.index > runningTaskIndex
       ) {
-        setRunningTaskIndex(runningTaskIndex + 1);
+        setRunningTaskIndex((prev) => prev + 1);
       } else if (
         result.destination.index >= runningTaskIndex &&
         result.source.index < runningTaskIndex
       ) {
-        setRunningTaskIndex(runningTaskIndex - 1);
+        setRunningTaskIndex((prev) => prev - 1);
       }
-    }
-  };
+    },
+    [todos, reorderTodos, runningTaskIndex]
+  );
 
-  const handleVolumeChange = (event, newValue) => {
+  const handleVolumeChange = (_, newValue) => {
     setVolume(newValue);
   };
 
+  const isTaskInTodos = useCallback(
+    (taskId) => todos.some((todo) => todo.id === taskId),
+    [todos]
+  );
+
+  const runDisabled = useMemo(
+    () => !activeListId || !todos.length,
+    [activeListId, todos.length]
+  );
+
   return (
-    <DragDropContext onDragEnd={handleOnDragEnd}>
-      <div className="ToDoList">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            paddingTop: "20px",
-          }}
-        >
+    <div className="app-layout">
+      <header className="page-header">
+        <div className="page-header__content">
+          <h1>Run the bell</h1>
+          <p>
+            Lock in your queue and let the bell drive the pace. Adjust the
+            volume, keep your focus, and move tasks to “Donzo” as they finish.
+          </p>
+        </div>
+        <div className="page-header__aside">
+          <span className="badge">{todos.length} queued</span>
+          <span className="badge">{completedTodos.length} done</span>
+        </div>
+      </header>
+
+      <section className="page-section">
+        <div className="run-toolbar">
           <button
-            onClick={
-              runningTaskIndex !== -1 ? pauseOrResumeTask : startFirstTask
-            }
-            style={{
-              width: "17%",
-              height: "10%",
-              backgroundColor:
-                runningTaskIndex !== -1 && todos[runningTaskIndex].isRunning
-                  ? "#35dd02"
-                  : "",
-            }}
+            onClick={runningTaskIndex !== -1 ? pauseOrResumeTask : startFirstTask}
+            className="btn btn--primary"
+            style={{ width: "200px" }}
+            disabled={runDisabled}
           >
             {runningTaskIndex !== -1 ? (
-              todos[runningTaskIndex].isRunning ? (
+              todos[runningTaskIndex]?.isRunning ? (
                 <IconContext.Provider value={{ className: "react-icons" }}>
                   <BsPauseFill />
                 </IconContext.Provider>
@@ -325,136 +194,129 @@ const ToDoRun = ({
             )}
           </button>
         </div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h3>Not yet done</h3>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-            }}
-          >
-            <button
-              style={{ backgroundColor: "transparent", marginRight: "0px" }}
-            >
-              <BsVolumeUpFill size={30} />
-            </button>
-            <div style={{ width: 325 }}>
-              {" "}
-              {/* Slider Container */}
-              <StyledSlider
-                value={volume}
-                onChange={handleVolumeChange}
-                aria-labelledby="continuous-slider"
-              />
+
+        <div className="volume-control" style={{ width: "min(260px, 40vw)", margin: "0 auto" }}>
+          <button type="button" className="btn-icon btn--ghost">
+            <BsVolumeUpFill size={22} />
+          </button>
+          <StyledSlider
+            value={volume}
+            onChange={handleVolumeChange}
+            aria-labelledby="run-volume-slider"
+          />
+        </div>
+      </section>
+
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <section className="page-section">
+          <div className="page-section__headline">
+            <h2>Not yet done</h2>
+            <span className="pill">Drag to reorder</span>
+          </div>
+
+          <Droppable droppableId="todos">
+            {(provided) => (
+              <div
+                className="stack"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {todos.map((todo, index) => (
+                  <ToDoItemRun
+                    key={todo.id}
+                    handleUpdate={handleUpdate}
+                    index={index}
+                    id={todo.id}
+                    task={todo.task}
+                    complete={todo.complete}
+                    primaryDuration={todo.primaryDuration}
+                    secondaryDuration={todo.secondaryDuration}
+                    numCycles={todo.numCycles}
+                    onToggle={() => handleToggle(todo.id)}
+                    tilDone={todo.tilDone}
+                    runningTaskIndex={runningTaskIndex}
+                    setRunningTaskIndex={setRunningTaskIndex}
+                    isTaskInTodos={isTaskInTodos}
+                    volume={volume}
+                  />
+                ))}
+                {provided.placeholder}
+                {!todos.length && (
+                  <div className="empty-state">
+                    <strong>No tasks are running</strong>
+                    Queue something on the To Do page and jump back in.
+                  </div>
+                )}
+              </div>
+            )}
+          </Droppable>
+        </section>
+
+        <section className="page-section page-section--subtle">
+          <div className="page-section__headline">
+            <h2>Donzo</h2>
+            <span className="badge">{completedTodos.length} completed</span>
+          </div>
+
+          <Droppable droppableId="completedTodos">
+            {(provided) => (
+              <div
+                className="stack"
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+              >
+                {completedTodos.map((todo, index) => (
+                  <ToDoItemRun
+                    key={todo.id}
+                    handleUpdate={handleUpdate}
+                    index={index}
+                    id={todo.id}
+                    task={todo.task}
+                    complete={todo.complete}
+                    primaryDuration={todo.primaryDuration}
+                    secondaryDuration={todo.secondaryDuration}
+                    numCycles={todo.numCycles}
+                    onToggle={() => handleToggle(todo.id, false)}
+                    tilDone={todo.tilDone}
+                    runningTaskIndex={runningTaskIndex}
+                    setRunningTaskIndex={setRunningTaskIndex}
+                    isTaskInTodos={isTaskInTodos}
+                    volume={volume}
+                  />
+                ))}
+                {provided.placeholder}
+                {!completedTodos.length && (
+                  <div className="empty-state">
+                    <strong>Nothing done yet</strong>
+                    Finish a cycle and it will drop here automatically.
+                  </div>
+                )}
+              </div>
+            )}
+          </Droppable>
+        </section>
+      </DragDropContext>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Ready to start?</h3>
+            <p>
+              Once the run begins, editing and reordering are locked. Double check
+              your order, then let the bell lead the way.
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn--primary" onClick={actuallyStartFirstTask}>
+                Yes, start
+              </button>
+              <button className="btn btn--ghost" onClick={() => setShowModal(false)}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-
-        <Droppable droppableId="todos">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {todos.map((todo, index) => (
-                <ToDoItemRun
-                  key={todo.id}
-                  handleUpdate={handleUpdate}
-                  index={index}
-                  id={todo.id}
-                  task={todo.task}
-                  complete={todo.complete}
-                  primaryDuration={todo.primaryDuration}
-                  secondaryDuration={todo.secondaryDuration}
-                  numCycles={todo.numCycles}
-                  onToggle={() => handleToggle(todo.id)}
-                  onDelete={() => handleDelete(todo.id)}
-                  tilDone={todo.tilDone}
-                  isRunning={todo.isRunning}
-                  setIsRunning={setIsRunning}
-                  runningTaskIndex={runningTaskIndex}
-                  setRunningTaskIndex={setRunningTaskIndex}
-                  isTaskInTodos={isTaskInTodos}
-                  draggableId={todo.id.toString()}
-                  volume={volume}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-        <h3>Donzo</h3>
-        <Droppable droppableId="completedTodos">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {completedTodos.map((todo, index) => (
-                <ToDoItemRun
-                  key={todo.id}
-                  handleUpdate={handleUpdate}
-                  index={index}
-                  id={todo.id}
-                  task={todo.task}
-                  complete={todo.complete}
-                  primaryDuration={todo.primaryDuration}
-                  secondaryDuration={todo.secondaryDuration}
-                  numCycles={todo.numCycles}
-                  onToggle={() => handleToggle(todo.id, index)}
-                  onDelete={() => handleDelete(todo.id)}
-                  tilDone={todo.tilDone}
-                  isRunning={false}
-                  runningTaskIndex={runningTaskIndex}
-                  setRunningTaskIndex={setRunningTaskIndex}
-                  isTaskInTodos={isTaskInTodos}
-                  draggableId={todo.id.toString()}
-                />
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </div>
-      {showModal && (
-        <>
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              zIndex: 999,
-            }}
-          />
-          <div
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              backgroundColor: "#4b4a4a",
-              padding: "20px",
-              zIndex: 1000,
-              borderRadius: "10px",
-              textAlign: "center",
-              boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <p>
-              Are you sure you want to start? Once you start this running, you
-              can't edit or rearrange your tasks. I recommend you double check
-              you have everything set and ordered properly first.{" "}
-            </p>
-            <button onClick={actuallyStartFirstTask}>Yes, start</button>
-            <button onClick={() => setShowModal(false)}>No, cancel</button>
-          </div>
-        </>
       )}
-    </DragDropContext>
+    </div>
   );
 };
 

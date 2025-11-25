@@ -1,6 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Draggable } from "react-beautiful-dnd";
-import { auth } from "../config/firebase";
+
+const formatTime = (seconds) => {
+  const safe = Math.max(0, seconds);
+  const minutes = Math.floor(safe / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = Math.floor(safe % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${minutes}:${secs}`;
+};
 
 const ToDoItem = ({
   id,
@@ -20,7 +30,6 @@ const ToDoItem = ({
   draggableId,
   volume,
   order,
-  todos,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -28,19 +37,32 @@ const ToDoItem = ({
   const [secondaryDuration, setSecondaryDuration] = useState(
     initialSecondaryDuration
   );
-  const [timeLeft, setTimeLeft] = useState(primaryDuration);
+  const [timeLeft, setTimeLeft] = useState(initialPrimaryDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isPrimary, setIsPrimary] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [primaryDurationFocused, setPrimaryDurationFocused] = useState(false);
-  const [secondaryDurationFocused, setSecondaryDurationFocused] =
-    useState(false);
-  const [cyclesFocused, setCyclesFocused] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(0);
   const [numCycles, setNumCycles] = useState(initialNumCycles);
-  const timeoutId = useRef(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const userId = auth.currentUser.uid;
+  const [taskLabel, setTaskLabel] = useState(task);
+  const stepperTimeout = useRef(null);
+  const timeLeftRef = useRef(timeLeft);
+  const phaseStateRef = useRef({ isPrimary: true, currentCycle: 0 });
+  const durationsRef = useRef({
+    primaryDuration: initialPrimaryDuration,
+    secondaryDuration: initialSecondaryDuration,
+    numCycles: initialNumCycles,
+  });
+  const tilDoneTickRef = useRef(Date.now());
+  const lastTickRef = useRef(Date.now());
+
+  useEffect(() => {
+    setTaskLabel(task);
+  }, [task]);
+
+  useEffect(() => {
+    setNumCycles(initialNumCycles);
+  }, [initialNumCycles]);
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
@@ -48,211 +70,200 @@ const ToDoItem = ({
   }, [initialPrimaryDuration, initialSecondaryDuration]);
 
   useEffect(() => {
-    if (!tilDone || tilDone) {
-      setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
-    } else {
-      setTimeLeft(0);
-    }
-  }, [primaryDuration, secondaryDuration, isPrimary, tilDone]);
+    durationsRef.current = {
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+    };
+  }, [primaryDuration, secondaryDuration, numCycles]);
+
+  useEffect(() => {
+    setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
+  }, [primaryDuration, secondaryDuration, isPrimary]);
+
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  useEffect(() => {
+    phaseStateRef.current = { isPrimary, currentCycle };
+  }, [isPrimary, currentCycle]);
 
   useEffect(() => {
     if (index === runningTaskIndex && isTaskInTodos(id)) {
       setIsRunning(true);
     }
-  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id]);
+  }, [runningTaskIndex, index, isTaskInTodos, id]);
 
   useEffect(() => {
-    let timer;
+    if (!isRunning || !tilDone) return;
 
-    if (isRunning && tilDone) {
-      timer = setInterval(
-        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
-        1000
-      );
-    }
+    tilDoneTickRef.current = Date.now();
 
-    return () => clearInterval(timer);
+    const tick = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - tilDoneTickRef.current) / 1000);
+      if (delta <= 0) return;
+      tilDoneTickRef.current = now;
+      setElapsedTime((prevElapsedTime) => prevElapsedTime + delta);
+    };
+
+    const interval = setInterval(tick, 1000);
+    const onVisibility = () => tick();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [isRunning, tilDone]);
 
   useEffect(() => {
-    let timer;
+    if (!isRunning || tilDone) return;
 
-    const playBell = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/boxingbell.wav");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playBell(times - 1), 1000);
-      }
-    };
+    lastTickRef.current = Date.now();
 
     const handleTaskCompletion = () => {
-      console.log(tilDone);
       setIsRunning(false);
-
+      const { primaryDuration: focusSeconds, secondaryDuration: breakSeconds, numCycles: totalCycles } =
+        durationsRef.current;
       const updatedTask = {
         id,
         index,
-        task,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
+        task: taskLabel,
+        primaryDuration: focusSeconds,
+        secondaryDuration: breakSeconds,
+        numCycles: totalCycles,
         tilDone,
         isRunning: false,
       };
-      handleUpdate(userId, updatedTask);
+      handleUpdate(updatedTask);
       onToggle(id, true);
-      //
     };
 
-    const playApplause = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/applause.mp3");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playApplause(times - 1), 1000);
-      }
-    };
+    const tick = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - lastTickRef.current) / 1000);
+      if (delta <= 0) return;
+      lastTickRef.current = now;
 
-    if (isRunning) {
-      console.log(timeLeft);
-      timer = setInterval(
-        () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-        1000
-      );
+      const { primaryDuration: focusSeconds, secondaryDuration: breakSeconds, numCycles: totalCycles } =
+        durationsRef.current;
+      let { isPrimary: localIsPrimary, currentCycle: localCycle } =
+        phaseStateRef.current;
+      let remaining = timeLeftRef.current - delta;
 
-      if (
-        timeLeft === 1 ||
-        (isPrimary ? primaryDuration : secondaryDuration) === 0
-      ) {
-        clearInterval(timer);
-        playBell();
-        if (isPrimary) {
-          setIsPrimary(false);
-          setTimeLeft(secondaryDuration);
-          // Check if we're about to start the last cycle with a secondary timer
-          if (currentCycle === numCycles - 1) {
-            playApplause();
+      while (remaining <= 0) {
+        const bell = new Audio("/boxingbell.wav");
+        bell.volume = volume / 100;
+        bell.play();
+
+        if (localIsPrimary) {
+          const overshoot = -remaining;
+          localIsPrimary = false;
+          remaining = breakSeconds - overshoot;
+          if (localCycle === totalCycles - 1) {
+            const applause = new Audio("/applause.mp3");
+            applause.volume = volume / 100;
+            applause.play();
           }
-          timer = setInterval(
-            () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-            1000
-          );
         } else {
-          setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-          setIsPrimary(!isPrimary);
-          setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-          if (currentCycle < numCycles - 1) {
-            timer = setInterval(
-              () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-              1000
-            );
-          } else if (!tilDone) {
+          if (localCycle >= totalCycles - 1) {
+            timeLeftRef.current = 0;
+            setTimeLeft(0);
             handleTaskCompletion();
+            return;
           }
+          const overshoot = -remaining;
+          localCycle += 1;
+          localIsPrimary = true;
+          remaining = focusSeconds - overshoot;
         }
       }
-    }
-    return () => clearInterval(timer);
+
+      timeLeftRef.current = Math.max(0, remaining);
+      setTimeLeft(timeLeftRef.current);
+
+      if (localIsPrimary !== phaseStateRef.current.isPrimary) {
+        setIsPrimary(localIsPrimary);
+      }
+
+      if (localCycle !== phaseStateRef.current.currentCycle) {
+        setCurrentCycle(localCycle);
+      }
+
+      phaseStateRef.current = {
+        isPrimary: localIsPrimary,
+        currentCycle: localCycle,
+      };
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    const onVisibility = () => tick();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [
     isRunning,
-    primaryDuration,
-    secondaryDuration,
-    isPrimary,
-    currentCycle,
-    numCycles,
-    timeLeft,
     tilDone,
     handleUpdate,
     id,
     index,
     onToggle,
-    task,
-    setRunningTaskIndex,
-    isTaskInTodos,
+    taskLabel,
     volume,
-    userId,
   ]);
 
   const toggleEdit = () => {
-    setIsEditing(!isEditing);
+    setIsEditing((prev) => !prev);
   };
 
-  const updateTask = () => {
-    setIsEditing(false);
-    if (!tilDone) {
-      console.log({
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning,
-        order,
-      });
-      handleUpdate(userId, {
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles,
-        tilDone,
-        isRunning,
-        order,
-      });
-    } else {
-      console.log({
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles: 999,
-        tilDone,
-        order,
-        isRunning,
-      });
-      handleUpdate(userId, {
-        id,
-        index,
-        task,
-        complete,
-        primaryDuration,
-        secondaryDuration,
-        numCycles: 999,
-        tilDone,
-        isRunning,
-        order,
-      });
-    }
+  const persistTask = (overrides = {}) => {
+    handleUpdate({
+      id,
+      index,
+      task: taskLabel,
+      complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+      tilDone,
+      isRunning,
+      order,
+      ...overrides,
+    });
   };
 
-  const handleMouseDown = (operation, value, setValue) => {
-    const changeValue = () => {
-      setValue((prevValue) => operation(prevValue));
+  const startStepper = (operation, setter) => {
+    const run = () => {
+      setter((prev) => operation(prev));
+      stepperTimeout.current = window.setTimeout(run, 220);
     };
+    run();
+  };
 
-    const accelerateChange = () => {
-      changeValue();
-      timeoutId.current = window.setTimeout(accelerateChange, 240);
+  const stopStepper = () => {
+    window.clearTimeout(stepperTimeout.current);
+  };
+
+  const handleToggleComplete = () => {
+    const updatedTask = {
+      id,
+      index,
+      task: taskLabel,
+      complete: !complete,
+      primaryDuration,
+      secondaryDuration,
+      numCycles,
+      tilDone,
+      isRunning: false,
     };
-
-    accelerateChange();
-  };
-
-  const handleMouseUp = () => {
-    window.clearTimeout(timeoutId.current);
-  };
-
-  const crossedOutStyle = {
-    textDecoration: "line-through",
-    opacity: 0.5,
+    handleUpdate(updatedTask);
+    onToggle(id, !complete);
   };
 
   const toggleTimer = () => {
@@ -264,24 +275,48 @@ const ToDoItem = ({
         setTimeout(() => playBell(times - 1), 1000);
       }
     };
-    setIsRunning(!isRunning);
 
     if (isRunning) {
-      // If it's running currently, we are about to pause it. So, set runningTaskIndex to -1
+      setIsRunning(false);
       setRunningTaskIndex(-1);
     } else if (isTaskInTodos(id)) {
       playBell();
-      // If it's paused currently, we are about to start it. So, set runningTaskIndex to the current index
+      setIsRunning(true);
       setRunningTaskIndex(index);
     }
+
+    persistTask({ isRunning: !isRunning });
   };
 
   const resetTimer = () => {
     setIsRunning(false);
+    setRunningTaskIndex(-1);
     setTimeLeft(primaryDuration);
     setIsPrimary(true);
     setElapsedTime(0);
+    setCurrentCycle(0);
+    persistTask({ isRunning: false });
   };
+
+  const handleDeleteClick = () => {
+    if (isRunning) {
+      resetTimer();
+    }
+    onDelete();
+  };
+
+  const saveEdits = () => {
+    setIsEditing(false);
+    persistTask({
+      primaryDuration,
+      secondaryDuration,
+      numCycles: tilDone ? 999 : numCycles,
+      task: taskLabel,
+    });
+  };
+
+  const formattedTime = tilDone ? formatTime(elapsedTime) : formatTime(timeLeft);
+  const totalCycles = tilDone ? "∞" : `${currentCycle + 1}/${Math.max(1, numCycles)}`;
 
   return (
     <Draggable draggableId={draggableId} index={index}>
@@ -290,438 +325,267 @@ const ToDoItem = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={
-            isRunning
-              ? isEditing
-                ? "isRunning-isEditingTask"
-                : "isRunning"
-              : isEditing
-              ? " task-isEditingTask"
-              : "task"
-          }
-          //        className={ isRunning ? { isEditing ? 'isRunning-isEditingTask' : "isRunning-task"} : {isEditing ? "editing-task" : "task"}}
+          className={`task-card${isRunning ? " task-card--active" : ""}${
+            isEditing ? " task-card--editing" : ""
+          }`}
         >
-          <label
-            className={
-              isRunning ? "isRunning-checkbox-container" : "checkbox-container"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  id,
-                  index,
-                  task,
-                  complete: !complete,
-                  primaryDuration,
-                  secondaryDuration,
-                  numCycles,
-                  tilDone,
-                  isRunning: false,
-                };
-                handleUpdate(userId, updatedTask);
-                onToggle(id, !complete);
-              }}
-            />
-            <span className="checkbox"></span>
-          </label>
-
-          {isEditing ? (
-            <input
-              type="text"
-              value={task}
-              onChange={(e) => {
-                handleUpdate(userId, {
-                  ...{
-                    id,
-                    index,
-                    task,
-                    complete,
-                    primaryDuration,
-                    secondaryDuration,
-                    onToggle,
-                    onDelete,
-                    handleUpdate,
-                  },
-                  task: e.target.value,
-                });
-              }}
-              style={{
-                marginLeft: "20px",
-                marginRight: "15px",
-
-                minWidth: "2rem",
-                backgroundColor: isRunning ? "#abf296" : "#66666667",
-                color: isRunning ? "#227f08" : "",
-              }}
-            />
-          ) : (
-            <span style={complete ? crossedOutStyle : { marginRight: "1rem" }}>
-              {task}
-            </span>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-around",
-              backgroundColor: "transparent",
-              margin: "1px",
-            }}
-          >
-            {isEditing && (
-              <>
-                <div className="timer-btn-container">
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn-plus"
-                        : "timer-change-btn timer-change-btn-plus"
-                    }
-                    onMouseDown={() =>
-                      handleMouseDown(
-                        (prev) => prev + 1,
-                        numCycles,
-                        setNumCycles
-                      )
-                    }
-                    onMouseUp={handleMouseUp}
-                    onTouchStart={() =>
-                      handleMouseDown(
-                        (prev) => prev + 1,
-                        numCycles,
-                        setNumCycles
-                      )
-                    }
-                    onTouchEnd={handleMouseUp}
-                  >
-                    +
-                  </button>
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
-                        : "timer-change-btn timer-change-btn-minus"
-                    }
-                    onMouseDown={() =>
-                      handleMouseDown(
-                        (prev) => Math.max(1, prev - 1),
-                        numCycles,
-                        setNumCycles
-                      )
-                    }
-                    onMouseUp={handleMouseUp}
-                    onTouchStart={() =>
-                      handleMouseDown(
-                        (prev) => Math.max(1, prev - 1),
-                        numCycles,
-                        setNumCycles
-                      )
-                    }
-                    onTouchEnd={handleMouseUp}
-                  >
-                    -
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <div style={{ marginLeft: "1px", marginRight: "3px" }}>
-                    Cycles:
-                  </div>
-                  <input
-                    type="text"
-                    pattern="\d*"
-                    value={numCycles}
-                    onChange={(e) => setNumCycles(parseInt(e.target.value))}
-                    className={
-                      isRunning && primaryDurationFocused
-                        ? "isRunning-timer-input"
-                        : "number-input"
-                    }
-                    style={{
-                      borderColor: cyclesFocused ? "#666" : "#666",
-                      backgroundColor: cyclesFocused
-                        ? isRunning
-                          ? "#abf296"
-                          : "#66666667"
-                        : "#66666667",
-                      color: isRunning ? "#227f08" : "",
-                    }}
-                    onFocus={() => setCyclesFocused(true)}
-                    onBlur={() => {
-                      setCyclesFocused(false);
-                      if (!tilDone) setCyclesFocused(Math.min(setNumCycles, 1));
-                      else return;
-                    }}
-                  />
-                </div>
-                <input
-                  id={`todo-${id}-hidden-input-primary`}
-                  type="number"
-                  value={primaryDuration / 60}
-                  onChange={(e) =>
-                    setPrimaryDuration(
-                      Math.max(0, parseInt(e.target.value, 10) * 60)
-                    )
-                  }
-                  className="hidden-timer-input"
-                  min="0"
-                />
-                <input
-                  id={`todo-${id}-hidden-input-secondary`}
-                  type="number"
-                  value={secondaryDuration / 60}
-                  onChange={(e) =>
-                    setSecondaryDuration(
-                      Math.max(0, parseInt(e.target.value, 10) * 60)
-                    )
-                  }
-                  className="hidden-timer-input"
-                  min="0"
-                />
-
-                <div className="timer-btn-container">
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn-plus"
-                        : "timer-change-btn timer-change-btn-plus"
-                    }
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleMouseDown(
-                        (value) => Math.min(value + 60, 90 * 60),
-                        primaryDuration,
-                        setPrimaryDuration
-                      );
-                    }}
-                    onMouseUp={handleMouseUp}
-                  >
-                    +
-                  </button>
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
-                        : "timer-change-btn timer-change-btn-minus"
-                    }
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleMouseDown(
-                        (value) => Math.max(value - 60, 0),
-                        primaryDuration,
-                        setPrimaryDuration
-                      );
-                    }}
-                    onMouseUp={handleMouseUp}
-                  >
-                    -
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <div style={{ marginLeft: "1px" }}>Minutes:</div>
-                  <input
-                    type="text"
-                    pattern="\d*"
-                    value={
-                      isNaN(primaryDuration / 60) || primaryDuration === null
-                        ? "00"
-                        : Math.floor(primaryDuration / 60)
-                    }
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? 0
-                          : parseInt(e.target.value, 10);
-                      if (!isNaN(value)) {
-                        setPrimaryDuration(value * 60);
-                      }
-                    }}
-                    className="timer-input"
-                    style={{
-                      borderColor: primaryDurationFocused ? "#666" : "#666",
-                      backgroundColor: primaryDurationFocused
-                        ? !isRunning
-                          ? "#66666667"
-                          : "#abf296"
-                        : "#66666667",
-                      color: isRunning ? "#227f08" : "",
-                    }}
-                    onFocus={() => setPrimaryDurationFocused(true)}
-                    onBlur={() => {
-                      setPrimaryDurationFocused(false);
-                      setPrimaryDuration(Math.min(primaryDuration, 90 * 60));
-                    }}
-                  />
-                </div>
-                <div className="timer-btn-container">
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn-plus"
-                        : "timer-change-btn timer-change-btn-plus"
-                    }
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleMouseDown(
-                        (value) => Math.min(value + 60, 90 * 60),
-                        secondaryDuration,
-                        setSecondaryDuration
-                      );
-                    }}
-                    onMouseUp={handleMouseUp}
-                  >
-                    +
-                  </button>
-
-                  <button
-                    className={
-                      isRunning
-                        ? "isRunning-timer-change-btn isRunning-timer-change-btn-minus"
-                        : "timer-change-btn timer-change-btn-minus"
-                    }
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleMouseDown(
-                        (value) => Math.max(value - 60, 0),
-                        secondaryDuration,
-                        setSecondaryDuration
-                      );
-                    }}
-                    onMouseUp={handleMouseUp}
-                  >
-                    -
-                  </button>
-                </div>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <div style={{ marginLeft: "1px", marginRight: "0px" }}>
-                    Minutes:
-                  </div>
-                  <input
-                    type="text"
-                    pattern="\d*"
-                    value={
-                      isNaN(secondaryDuration / 60) ||
-                      secondaryDuration === null
-                        ? "00"
-                        : Math.floor(secondaryDuration / 60)
-                    }
-                    onChange={(e) => {
-                      const value =
-                        e.target.value === ""
-                          ? 0
-                          : parseInt(e.target.value, 10);
-                      if (!isNaN(value)) {
-                        setSecondaryDuration(value * 60);
-                      }
-                    }}
-                    className="timer-input"
-                    style={{
-                      borderColor: secondaryDurationFocused ? "#666" : "#666",
-                      backgroundColor: secondaryDurationFocused
-                        ? !isRunning
-                          ? "#66666667"
-                          : "#abf296"
-                        : "#66666667",
-                      color: isRunning ? "#227f08" : "",
-                    }}
-                    onFocus={() => setSecondaryDurationFocused(true)}
-                    onBlur={() => {
-                      setSecondaryDurationFocused(false);
-                      setSecondaryDuration(
-                        Math.min(secondaryDuration, 90 * 60)
-                      );
-                    }}
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="countdown">
-              {tilDone ? (
+          <div className="task-card__primary">
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={complete}
+                onChange={handleToggleComplete}
+              />
+              <span></span>
+            </label>
+            <div className="stack stack--dense" style={{ minWidth: "0" }}>
+              {isEditing ? (
                 <input
                   type="text"
-                  value={`${Math.floor(elapsedTime / 60)}:${String(
-                    elapsedTime % 60
-                  ).padStart(2, "0")}`}
-                  readOnly
-                  className={isRunning ? "isRunningCountdown" : "countdown"}
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginLeft: ".5rem",
-                    marginRight: ".5rem",
-                  }}
+                  value={taskLabel}
+                  onChange={(e) => setTaskLabel(e.target.value)}
+                  disabled={complete}
                 />
               ) : (
-                <input
-                  type="text"
-                  value={`${Math.floor(timeLeft / 60)}:${String(
-                    timeLeft % 60
-                  ).padStart(2, "0")}`}
-                  readOnly
-                  className={isRunning ? "isRunningCountdown" : "countdown"}
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginLeft: ".5rem",
-                  }}
-                />
+                <p
+                  className={`task-card__title${
+                    complete ? " task-card__title--complete" : ""
+                  }`}
+                >
+                  {taskLabel}
+                </p>
               )}
+              <div className="task-card__meta">
+                <span>Primary {Math.floor(primaryDuration / 60)}m</span>
+                <span>Break {Math.floor(secondaryDuration / 60)}m</span>
+                <span>Order {order ?? "—"}</span>
+                <span>Cycles {tilDone ? "∞" : numCycles}</span>
+              </div>
             </div>
+          </div>
 
-            {!isEditing && (
-              <>
-                {!complete && (
-                  <button
-                    onClick={toggleTimer}
-                    className={
-                      isRunning ? "isRunning-button" : "notRunning-button"
-                    }
-                  >
-                    {isRunning ? "Pause" : "Start"}
-                  </button>
-                )}
-                <button
-                  onClick={resetTimer}
-                  style={{ marginLeft: "1rem" }}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={onDelete}
-                  style={{ marginLeft: "1rem" }}
-                  className={
-                    isRunning ? "isRunning-button" : "notRunning-button"
-                  }
-                >
-                  Delete
-                </button>
-              </>
+          <div className="task-card__timer">
+            <div
+              className={`timer-display${
+                isRunning ? " timer-display--active" : ""
+              }`}
+            >
+              {formattedTime}
+            </div>
+            <span className="pill">
+              {tilDone ? "Til done" : `Cycle ${totalCycles}`}
+            </span>
+          </div>
+
+          <div className="task-card__actions">
+            {!complete && (
+              <button type="button" className="btn" onClick={toggleTimer}>
+                {isRunning ? "Pause" : "Start"}
+              </button>
             )}
-
             <button
-              onClick={isEditing ? updateTask : toggleEdit}
-              className={
-                isRunning
-                  ? "isRunning-button"
-                  : "notRunning-button" /*"button-84" Use this for the other button*/
-              }
-              style={{
-                marginLeft: "1rem",
-                minWidth: "70px",
-                maxWidth: "70px",
-                textAlign: "center",
-              }}
+              type="button"
+              className="btn btn--ghost"
+              onClick={resetTimer}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={isEditing ? saveEdits : toggleEdit}
             >
               {isEditing ? "Done" : "Edit"}
             </button>
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={handleDeleteClick}
+            >
+              Delete
+            </button>
           </div>
+
+          {isEditing && (
+            <div className="task-card__editor" style={{ gridColumn: "1 / -1" }}>
+              <div className="task-form__row">
+                {!tilDone && (
+                  <div className="task-form__field" style={{ maxWidth: "200px" }}>
+                    <label>Cycles</label>
+                    <div className="timer-stepper">
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper(
+                            (prev) => Math.max(1, prev - 1),
+                            setNumCycles
+                          )
+                        }
+                        onMouseUp={stopStepper}
+                        onMouseLeave={stopStepper}
+                        onTouchStart={() =>
+                          startStepper(
+                            (prev) => Math.max(1, prev - 1),
+                            setNumCycles
+                          )
+                        }
+                        onTouchEnd={stopStepper}
+                      >
+                        −
+                      </button>
+                      <input
+                        className="timer-stepper__input"
+                        type="number"
+                        min={1}
+                        value={numCycles}
+                        onChange={(e) =>
+                          setNumCycles(Math.max(1, parseInt(e.target.value || "1", 10)))
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper((prev) => prev + 1, setNumCycles)
+                        }
+                        onMouseUp={stopStepper}
+                        onMouseLeave={stopStepper}
+                        onTouchStart={() =>
+                          startStepper((prev) => prev + 1, setNumCycles)
+                        }
+                        onTouchEnd={stopStepper}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="task-form__field" style={{ maxWidth: "220px" }}>
+                    <label>Focus minutes</label>
+                    <div className="timer-stepper">
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper(
+                            (value) => Math.max(value - 60, 0),
+                            setPrimaryDuration
+                          )
+                      }
+                      onMouseUp={stopStepper}
+                      onMouseLeave={stopStepper}
+                      onTouchStart={() =>
+                        startStepper(
+                          (value) => Math.max(value - 60, 0),
+                          setPrimaryDuration
+                        )
+                      }
+                      onTouchEnd={stopStepper}
+                    >
+                      −
+                    </button>
+                    <input
+                      className="timer-stepper__input"
+                      type="number"
+                      min={0}
+                      value={Math.floor(primaryDuration / 60)}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                        if (!Number.isNaN(value)) {
+                          setPrimaryDuration(Math.min(Math.max(value, 0), 90) * 60);
+                        }
+                      }}
+                      />
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper(
+                            (value) => Math.min(value + 60, 90 * 60),
+                            setPrimaryDuration
+                          )
+                      }
+                      onMouseUp={stopStepper}
+                      onMouseLeave={stopStepper}
+                      onTouchStart={() =>
+                        startStepper(
+                          (value) => Math.min(value + 60, 90 * 60),
+                          setPrimaryDuration
+                        )
+                      }
+                      onTouchEnd={stopStepper}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="task-form__field" style={{ maxWidth: "220px" }}>
+                    <label>Break minutes</label>
+                    <div className="timer-stepper">
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper(
+                            (value) => Math.max(value - 60, 0),
+                            setSecondaryDuration
+                          )
+                      }
+                      onMouseUp={stopStepper}
+                      onMouseLeave={stopStepper}
+                      onTouchStart={() =>
+                        startStepper(
+                          (value) => Math.max(value - 60, 0),
+                          setSecondaryDuration
+                        )
+                      }
+                      onTouchEnd={stopStepper}
+                    >
+                      −
+                    </button>
+                    <input
+                      className="timer-stepper__input"
+                      type="number"
+                      min={0}
+                      value={Math.floor(secondaryDuration / 60)}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
+                        if (!Number.isNaN(value)) {
+                          setSecondaryDuration(
+                            Math.min(Math.max(value, 0), 90) * 60
+                          );
+                        }
+                      }}
+                      />
+                      <button
+                        type="button"
+                        className="timer-stepper__button"
+                        onMouseDown={() =>
+                          startStepper(
+                            (value) => Math.min(value + 60, 90 * 60),
+                            setSecondaryDuration
+                          )
+                      }
+                      onMouseUp={stopStepper}
+                      onMouseLeave={stopStepper}
+                      onTouchStart={() =>
+                        startStepper(
+                          (value) => Math.min(value + 60, 90 * 60),
+                          setSecondaryDuration
+                        )
+                      }
+                      onTouchEnd={stopStepper}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </li>
       )}
     </Draggable>

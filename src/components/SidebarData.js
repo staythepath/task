@@ -30,10 +30,16 @@ export const SidebarData = [
     icon: <BsIcons.BsPlayFill />,
     cName: "nav-text",
   },
-  /* {
+  {
     title: "Journals",
     path: "/Journals",
     icon: <BsIcons.BsFillJournalBookmarkFill />,
     cName: "nav-text",
-  }, */
+  },
+  {
+    title: "Calendar",
+    path: "/Calendar",
+    icon: <AiIcons.AiFillCalendar />,
+    cName: "nav-text",
+  },
 ];
