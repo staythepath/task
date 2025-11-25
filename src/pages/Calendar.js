@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../config/firebase"; // import your Firebase config file
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 import "./Calendar.css";
 
 const CalendarPage = ({ user }) => {
@@ -24,18 +24,14 @@ const CalendarPage = ({ user }) => {
   }, [user]);
 
   const handleDayClick = async (date) => {
-    // assuming events is an object with dates as keys
     const dateString = date.toISOString().split("T")[0];
     const event = events[dateString];
 
-    if (event) {
-      // Show event or navigate to event page
-    } else {
-      // Set an event for this date
+    if (!event && user) {
       const updatedEvents = {
         ...events,
         [dateString]: {
-          /* event details */
+          note: "",
         },
       };
       setEvents(updatedEvents);
@@ -46,13 +42,31 @@ const CalendarPage = ({ user }) => {
   };
 
   return (
-    <div className="calendar-container">
-      <Calendar
-        onChange={onChange}
-        value={value}
-        onClickDay={handleDayClick}
-        className="react-calendar"
-      />
+    <div className="app-layout">
+      <header className="page-header">
+        <div className="page-header__content">
+          <h1>Calendar</h1>
+          <p>
+            Spot commitments at a glance and carve out focused time around what
+            matters most.
+          </p>
+        </div>
+      </header>
+
+      <section className="page-section calendar-card">
+        <div className="page-section__headline" style={{ marginBottom: "18px" }}>
+          <h2>Schedule</h2>
+          <span className="pill">Tap a day to add notes</span>
+        </div>
+        <div className="calendar-container">
+          <Calendar
+            onChange={onChange}
+            value={value}
+            onClickDay={handleDayClick}
+            className="react-calendar"
+          />
+        </div>
+      </section>
     </div>
   );
 };

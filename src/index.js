@@ -4,13 +4,15 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { ProSidebarProvider } from "react-pro-sidebar";
-
+import { TaskProvider } from "./context/TaskContext";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <ProSidebarProvider>
-    <App />
-  </ProSidebarProvider>
+  <TaskProvider>
+    <ProSidebarProvider>
+      <App />
+    </ProSidebarProvider>
+  </TaskProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

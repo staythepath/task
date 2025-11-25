@@ -1,4 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+const formatTime = (seconds) => {
+  const safe = Math.max(0, seconds);
+  const minutes = Math.floor(safe / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = Math.floor(safe % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${minutes}:${secs}`;
+};
 
 const ToDoItemRun = ({
   id,
@@ -15,8 +26,6 @@ const ToDoItemRun = ({
   setRunningTaskIndex,
   isTaskInTodos,
   volume,
-  isRunning,
-  setIsRunning,
 }) => {
   const [primaryDuration, setPrimaryDuration] = useState(
     initialPrimaryDuration
@@ -24,69 +33,94 @@ const ToDoItemRun = ({
   const [secondaryDuration, setSecondaryDuration] = useState(
     initialSecondaryDuration
   );
-  const [timeLeft, setTimeLeft] = useState(primaryDuration);
-
+  const [timeLeft, setTimeLeft] = useState(initialPrimaryDuration);
   const [isPrimary, setIsPrimary] = useState(true);
-  const [previousIndex, setPreviousIndex] = useState(null);
   const [currentCycle, setCurrentCycle] = useState(0);
-  const numCycles = initialNumCycles;
-
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [taskLabel, setTaskLabel] = useState(task);
+  const timeLeftRef = useRef(initialPrimaryDuration);
+  const phaseStateRef = useRef({ isPrimary: true, currentCycle: 0 });
+  const durationsRef = useRef({
+    primaryDuration: initialPrimaryDuration,
+    secondaryDuration: initialSecondaryDuration,
+    numCycles: initialNumCycles,
+  });
+  const tilDoneTickRef = useRef(Date.now());
+  const lastTickRef = useRef(Date.now());
 
   useEffect(() => {
     setPrimaryDuration(initialPrimaryDuration);
     setSecondaryDuration(initialSecondaryDuration);
-  }, [initialPrimaryDuration, initialSecondaryDuration]);
+    setTaskLabel(task);
+  }, [initialPrimaryDuration, initialSecondaryDuration, task]);
 
   useEffect(() => {
-    if (!tilDone || tilDone) {
-      setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
-    } else {
-      setTimeLeft(0);
-    }
-  }, [primaryDuration, secondaryDuration, isPrimary, tilDone]);
+    durationsRef.current = {
+      primaryDuration,
+      secondaryDuration,
+      numCycles: initialNumCycles,
+    };
+  }, [primaryDuration, secondaryDuration, initialNumCycles]);
+
+  useEffect(() => {
+    setTimeLeft(isPrimary ? primaryDuration : secondaryDuration);
+  }, [primaryDuration, secondaryDuration, isPrimary]);
+
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
+  useEffect(() => {
+    phaseStateRef.current = { isPrimary, currentCycle };
+  }, [isPrimary, currentCycle]);
 
   useEffect(() => {
     if (index === runningTaskIndex && isTaskInTodos(id)) {
       setIsRunning(true);
+    } else if (runningTaskIndex !== index) {
+      setIsRunning(false);
     }
-  }, [runningTaskIndex, index, tilDone, isTaskInTodos, id, setIsRunning]);
+  }, [runningTaskIndex, index, isTaskInTodos, id]);
 
   useEffect(() => {
-    let timer;
+    if (!isRunning || !tilDone) return;
 
-    if (isRunning && tilDone) {
-      timer = setInterval(
-        () => setElapsedTime((prevElapsedTime) => prevElapsedTime + 1),
-        1000
-      );
-    }
+    tilDoneTickRef.current = Date.now();
 
-    return () => clearInterval(timer);
+    const tick = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - tilDoneTickRef.current) / 1000);
+      if (delta <= 0) return;
+      tilDoneTickRef.current = now;
+      setElapsedTime((prevElapsedTime) => prevElapsedTime + delta);
+    };
+
+    const interval = setInterval(tick, 1000);
+    const onVisibility = () => tick();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [isRunning, tilDone]);
 
-  const playBell = (times = 1) => {
-    if (times > 0) {
-      const audio = new Audio("/boxingbell.wav");
-      audio.volume = volume / 100;
-      audio.play();
-      setTimeout(() => playBell(times - 1), 1000);
-    }
-  };
-
   useEffect(() => {
-    let timer;
+    if (!isRunning || tilDone) return;
+
+    lastTickRef.current = Date.now();
 
     const handleTaskCompletion = () => {
-      console.log(tilDone);
       setIsRunning(false);
-
+      const { primaryDuration: focusSeconds, secondaryDuration: breakSeconds, numCycles } =
+        durationsRef.current;
       const updatedTask = {
         id,
         index,
-        task,
-        primaryDuration,
-        secondaryDuration,
+        task: taskLabel,
+        primaryDuration: focusSeconds,
+        secondaryDuration: breakSeconds,
         numCycles,
         tilDone,
         isRunning: false,
@@ -98,184 +132,124 @@ const ToDoItemRun = ({
       }
     };
 
-    const playApplause = (times = 1) => {
-      if (times > 0) {
-        const audio = new Audio("/applause.mp3");
-        audio.volume = volume / 100;
-        audio.play();
-        setTimeout(() => playApplause(times - 1), 1000);
-      }
-    };
+    const tick = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - lastTickRef.current) / 1000);
+      if (delta <= 0) return;
+      lastTickRef.current = now;
 
-    if (isRunning) {
-      console.log(timeLeft);
-      timer = setInterval(
-        () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-        1000
-      );
+      const { primaryDuration: focusSeconds, secondaryDuration: breakSeconds, numCycles } =
+        durationsRef.current;
+      let { isPrimary: localIsPrimary, currentCycle: localCycle } =
+        phaseStateRef.current;
+      let remaining = timeLeftRef.current - delta;
 
-      if (
-        timeLeft === 1 ||
-        (isPrimary ? primaryDuration : secondaryDuration) === 0
-      ) {
-        clearInterval(timer);
-        playBell();
-        if (isPrimary) {
-          setIsPrimary(false);
-          setTimeLeft(secondaryDuration);
-          // Check if we're about to start the last cycle with a secondary timer
-          if (currentCycle === numCycles - 1) {
-            playApplause();
+      while (remaining <= 0) {
+        const bell = new Audio("/boxingbell.wav");
+        bell.volume = volume / 100;
+        bell.play();
+
+        if (localIsPrimary) {
+          const overshoot = -remaining;
+          localIsPrimary = false;
+          remaining = breakSeconds - overshoot;
+          if (localCycle === numCycles - 1) {
+            const applause = new Audio("/applause.mp3");
+            applause.volume = volume / 100;
+            applause.play();
           }
-          timer = setInterval(
-            () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-            1000
-          );
         } else {
-          setCurrentCycle(currentCycle < numCycles - 1 ? currentCycle + 1 : 0);
-          setIsPrimary(!isPrimary);
-          setTimeLeft(isPrimary ? secondaryDuration : primaryDuration);
-          if (currentCycle < numCycles - 1) {
-            timer = setInterval(
-              () => setTimeLeft((prevTimeLeft) => prevTimeLeft - 1),
-              1000
-            );
-          } else if (!tilDone) {
+          if (localCycle >= numCycles - 1) {
+            timeLeftRef.current = 0;
+            setTimeLeft(0);
             handleTaskCompletion();
+            return;
           }
+          const overshoot = -remaining;
+          localCycle += 1;
+          localIsPrimary = true;
+          remaining = focusSeconds - overshoot;
         }
       }
-    }
-    return () => clearInterval(timer);
+
+      timeLeftRef.current = Math.max(0, remaining);
+      setTimeLeft(timeLeftRef.current);
+
+      if (localIsPrimary !== phaseStateRef.current.isPrimary) {
+        setIsPrimary(localIsPrimary);
+      }
+
+      if (localCycle !== phaseStateRef.current.currentCycle) {
+        setCurrentCycle(localCycle);
+      }
+
+      phaseStateRef.current = {
+        isPrimary: localIsPrimary,
+        currentCycle: localCycle,
+      };
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    const onVisibility = () => tick();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [
     isRunning,
-    primaryDuration,
-    secondaryDuration,
-    isPrimary,
-    currentCycle,
-    numCycles,
-    timeLeft,
     tilDone,
     handleUpdate,
     id,
     index,
     onToggle,
-    task,
-    setRunningTaskIndex,
-    isTaskInTodos,
+    taskLabel,
     volume,
-    setIsRunning,
+    isTaskInTodos,
+    setRunningTaskIndex,
   ]);
 
-  const crossedOutStyle = {
-    textDecoration: "line-through",
-    opacity: 0.5,
-  };
+  const formattedTime = tilDone ? formatTime(elapsedTime) : formatTime(timeLeft);
+  const remainingCycles = tilDone
+    ? "∞"
+    : `${Math.max(initialNumCycles - currentCycle, 1)}`;
 
   return (
-    <div className="task-container-">
-      <li className={isRunning ? "isRunning" : "task"}>
-        <label
-          className={
-            isRunning ? "isRunning-checkbox-container" : "checkbox-container"
-          }
-        >
-          {isRunning && tilDone ? (
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  id,
-                  index,
-                  task,
-                  complete: !complete,
-                  primaryDuration,
-                  secondaryDuration,
-                  numCycles,
-                  tilDone,
-                  isRunning: false,
-                };
-                handleUpdate(updatedTask);
-                onToggle(id, !complete);
-              }}
-            />
-          ) : (
-            <input
-              type="checkbox"
-              checked={complete}
-              onChange={() => {
-                const updatedTask = {
-                  isRunning: false,
-                };
-                handleUpdate(updatedTask);
-              }}
-            />
-          )}
-          <span className="checkbox"></span>
+    <div className={`task-card${isRunning ? " task-card--active" : ""}`}>
+      <div className="task-card__primary">
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={complete}
+            onChange={() => onToggle(id, !complete)}
+          />
+          <span></span>
         </label>
-
-        <span style={complete ? crossedOutStyle : { marginRight: "1rem" }}>
-          {task}
-        </span>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-around",
-          }}
-        >
-          <div className="countdown">
-            {!tilDone && (
-              <input
-                type="text"
-                value={numCycles - currentCycle}
-                readOnly
-                className={isRunning ? "isRunningCountdown" : ""}
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginRight: "rem",
-                }}
-              />
-            )}
-          </div>
-          <div className="countdownRun">
-            {tilDone ? (
-              <input
-                type="text"
-                value={`${Math.floor(elapsedTime / 60)}:${String(
-                  elapsedTime % 60
-                ).padStart(2, "0")}`}
-                readOnly
-                className={isRunning ? "isRunningCountdown" : ""}
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginLeft: ".5rem",
-                  marginRight: "1rem",
-                }}
-              />
-            ) : (
-              <input
-                type="text"
-                value={`${Math.floor(timeLeft / 60)}:${String(
-                  timeLeft % 60
-                ).padStart(2, "0")}`}
-                readOnly
-                className={isRunning ? "isRunningCountdown" : ""}
-                style={{
-                  width: "100%",
-                  textAlign: "center",
-                  marginLeft: ".5rem",
-                  marginRight: "1rem",
-                }}
-              />
-            )}
+        <div className="stack stack--dense">
+          <p
+            className={`task-card__title${
+              complete ? " task-card__title--complete" : ""
+            }`}
+          >
+            {taskLabel}
+          </p>
+          <div className="task-card__meta">
+            <span>Primary {Math.floor(primaryDuration / 60)}m</span>
+            <span>Break {Math.floor(secondaryDuration / 60)}m</span>
+            <span>Cycles left {remainingCycles}</span>
           </div>
         </div>
-      </li>
+      </div>
+      <div className="task-card__timer">
+        <div
+          className={`timer-display${isRunning ? " timer-display--active" : ""}`}
+        >
+          {formattedTime}
+        </div>
+        <span className="pill">{tilDone ? "Til done" : `Cycle ${currentCycle + 1}`}</span>
+      </div>
     </div>
   );
 };

@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as FaIcons from "react-icons/fa";
-import * as AiIcons from "react-icons/ai";
 import { Link } from "react-router-dom";
 import { SidebarData } from "./SidebarData";
 import "./Navbar.css";
 import { IconContext } from "react-icons";
 import Auth from "./Auth";
-import Calendar from "../pages/Calendar";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
@@ -101,8 +99,8 @@ function Navbar() {
           </Link>
           <h2 className="navbar-logo">Obey the Bell</h2>
           {user ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <h4 style={{ marginRight: "10px" }}>{username}</h4>
+            <div className="navbar-user">
+              <span className="pill">{username}</span>
               <button onClick={handleLogout} className="auth-button">
                 Sign Out
               </button>
@@ -125,18 +123,14 @@ function Navbar() {
           className={sidebar ? "nav-menu active" : "nav-menu"}
         >
           <ul className="nav-menu-items">
-            {SidebarData.map((item, index) => {
-              return (
-                <li key={index} className={item.cName} onClick={showSidebar}>
-                  <Link to={item.path}>
-                    {item.icon}
-                    <span>{item.title}</span>
-                  </Link>
-                </li>
-              );
-            })}
-
-            <Calendar />
+            {SidebarData.map((item, index) => (
+              <li key={index} className={item.cName} onClick={showSidebar}>
+                <Link to={item.path}>
+                  {item.icon}
+                  <span>{item.title}</span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       </IconContext.Provider>
